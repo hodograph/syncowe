@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "134068539303",
+    "project_id": "syncowe",
+    "storage_bucket": "syncowe.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:134068539303:android:3d559dc7adfbec0b457082",
+        "android_client_info": {
+          "package_name": "com.syncowe.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOHtkRjVdWGEh67vDtwoBsI0PxhSQpqec"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
