@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
 import 'package:syncowe/models/user.dart' as syncowe_user;
 
@@ -46,5 +47,32 @@ class AuthService extends ChangeNotifier{
   Future<void> signOut() async
   {
     return await FirebaseAuth.instance.signOut();
+  }
+
+  Future<UserCredential> signInWithGoogle() async
+  {
+    final GoogleSignInAccount? gUser = await GoogleSignIn().signIn();
+
+    final GoogleSignInAuthentication gAuth = await gUser!.authentication;
+
+    final credential = GoogleAuthProvider.credential(
+      accessToken: gAuth.accessToken,
+      idToken: gAuth.idToken
+    );
+
+    final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+
+    if( await _userFirestoreService.getUser(userCredential.user!.uid) == null)
+    {
+      _userFirestoreService.addOrUpdateUser(
+        syncowe_user.User(
+          displayName: userCredential.user!.displayName, 
+          email: userCredential.user!.email!, 
+          id: userCredential.user!.uid, 
+          picture: userCredential.user!.photoURL)
+      );
+    }
+
+    return userCredential;
   }
 }

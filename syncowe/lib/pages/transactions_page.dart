@@ -71,7 +71,7 @@ class _TransactionPage extends State<TransactionsPage>
             );
           }
 
-          transactions.sort((a, b) => 
+          transactions.sort((b, a) => 
             ((a.data() as Transaction).createdDate as DateTime).compareTo((b.data() as Transaction).createdDate as DateTime));
 
           return ListView.builder(

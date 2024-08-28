@@ -115,32 +115,50 @@ class _TripOverviewPage extends State<TripOverviewPage>
                               {
                                 final summaryList = snapshot.data!.docs.map((doc) => doc.data() as OverallDebtSummary).toList();
 
-                                summaryList.sort((a,b) => (a.createdDate as DateTime).compareTo(b.createdDate as DateTime));
+                                summaryList.sort((b,a) => (a.createdDate as DateTime).compareTo(b.createdDate as DateTime));
 
                                 double user1Total = 0;
                                 double user2Total = 0;
+                                double user1Pending = 0;
+                                double user2Pending = 0;
 
                                 for (OverallDebtSummary summary in summaryList)
                                 {
                                   double amount = summary.amount;
-                                  if (summary.isReimbursement)
+
+                                  if (summary.isReimbursement && !summary.isPending)
                                   { 
                                     amount *= -1;
                                   }
 
                                   if (summary.debtor == debtPair.user1)
                                   {
-                                    user1Total += amount;
+                                    if (summary.isPending)
+                                    {
+                                      user1Pending += amount;
+                                    }
+                                    else
+                                    {
+                                      user1Total += amount;
+                                    }
                                   }
                                   else
                                   {
-                                    user2Total += amount;
+                                    if (summary.isPending)
+                                    {
+                                      user2Pending += amount;
+                                    }
+                                    else
+                                    {
+                                      user2Total += amount;
+                                    }
                                   }
                                 }
 
                                 User debtor = users[user1Total > user2Total ? debtPair.user1 : debtPair.user2]!;
                                 User owedTo = users[user1Total > user2Total ? debtPair.user2 : debtPair.user1]!;
                                 double totalOwed = user1Total > user2Total ? user1Total - user2Total : user2Total - user1Total;
+                                double totalPending = user1Pending > user2Pending ? user1Pending - user2Pending : user2Pending - user1Pending;
 
                                 if (num.parse(totalOwed.toStringAsFixed(2)) == 0)
                                 {
@@ -157,6 +175,18 @@ class _TripOverviewPage extends State<TripOverviewPage>
                                     amount *= -1;
                                   }
 
+                                  Color color = Colors.red;
+
+                                  if (amount < 0)
+                                  {
+                                    color = Colors.green;
+                                  }
+
+                                  if(summary.isPending)
+                                  {
+                                    color = Colors.yellow;
+                                  }
+
                                   summaryWidgets.add(ListTile
                                   (
                                     title: Text(summary.memo),
@@ -166,7 +196,7 @@ class _TripOverviewPage extends State<TripOverviewPage>
                                         symbol: "\$")
                                       .format(summary.amount),
                                       style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                                        color: amount < 0 ? Colors.green : Colors.red
+                                        color: color
                                       ),
                                     ),
                                   ));
@@ -183,7 +213,7 @@ class _TripOverviewPage extends State<TripOverviewPage>
                                     .format(totalOwed),
                                     style: Theme.of(context).textTheme.headlineMedium
                                   ),
-                                  trailing: debtor.id == _userFirestoreService.currentUserId() ? 
+                                  trailing: debtor.id == _userFirestoreService.currentUserId() && totalOwed - totalPending > 0 ? 
                                     FilledButton.icon(
                                       onPressed: () => Navigator.of(context).push(
                                         MaterialPageRoute(builder: (context) => CreateReimbursementForm

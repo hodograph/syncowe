@@ -123,6 +123,7 @@ async function updateOverallSummariesFromTransaction(
         newTransaction.transactionName,
         transactionId,
         false,
+        false,
         newTransaction.createdDate)));
   });
 }
@@ -210,6 +211,7 @@ async function updateOverallSummariesFromReimbursement(
       "Reimbursement",
       reimbursementId,
       true,
+      !newReimbursement.confirmed,
       newReimbursement.createdDate)));
 }
 
@@ -287,6 +289,7 @@ class OverallDebtSummary {
   memo: string;
   transactionId: string;
   isReimbursement: boolean;
+  isPending: boolean;
   createdDate: Timestamp;
 
   /**
@@ -296,6 +299,7 @@ class OverallDebtSummary {
    * @param {string} memo title of why money is owed.
    * @param {string} transactionId ID of the memo that caused this.
    * @param {boolean} isReimbursement if this is a reimbursement or not.
+   * @param {boolean} isPending if this reimbursement has been confirmed.
    * @param {Timestamp} createdDate time this was created.
    */
   public constructor(
@@ -305,6 +309,7 @@ class OverallDebtSummary {
     memo: string,
     transactionId: string,
     isReimbursement: boolean,
+    isPending: boolean,
     createdDate: Timestamp) {
     this.debtor = debtor;
     this.payer = payer;
@@ -312,6 +317,7 @@ class OverallDebtSummary {
     this.memo = memo;
     this.transactionId = transactionId;
     this.isReimbursement = isReimbursement;
+    this.isPending = isPending;
     this.createdDate = createdDate;
   }
 }

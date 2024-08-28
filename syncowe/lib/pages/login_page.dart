@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_signin_button/button_list.dart';
+import 'package:flutter_signin_button/button_view.dart';
 import 'package:syncowe/services/auth/auth_service.dart';
 import 'package:provider/provider.dart';
 
@@ -24,6 +26,23 @@ class _LoginPageState extends State<LoginPage>
     try
     {
       await authService.signInWIthEmailAndPassword(emailController.text, passwordController.text);
+    }
+    catch(e)
+    {
+      if(mounted)
+      {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  void signInWithGoogle() async
+  {
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    try
+    {
+      await authService.signInWithGoogle();
     }
     catch(e)
     {
@@ -94,9 +113,16 @@ class _LoginPageState extends State<LoginPage>
                         onPressed: widget.onTap, 
                         child: const Text("Create Account"))
                     ],
-                  )
+                  ),
 
-                  // Register button
+                  const SizedBox(height: 25,),
+                  const Divider(),
+                  const SizedBox(height: 25,),
+
+                  SignInButton(
+                    Theme.of(context).brightness == Brightness.light ? Buttons.Google : Buttons.GoogleDark,
+                    onPressed: signInWithGoogle
+                  )
                 ],
               ),
             ),

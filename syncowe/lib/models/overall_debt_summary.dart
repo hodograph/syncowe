@@ -13,6 +13,7 @@ class OverallDebtSummary
   final String memo;
   final String transactionId;
   final bool isReimbursement;
+  final bool isPending;
 
   @JsonKey(
     toJson: ServerTimestampConverter.toJson,
@@ -26,6 +27,7 @@ class OverallDebtSummary
     required this.memo, 
     required this.transactionId, 
     required this.isReimbursement,
+    required this.isPending,
     this.createdDate});
 
   factory OverallDebtSummary.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? options) => OverallDebtSummary.fromJson(snapshot.data()!);

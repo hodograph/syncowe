@@ -1,5 +1,6 @@
 import 'package:currency_textfield/currency_textfield.dart';
 import 'package:flutter/material.dart';
+import 'package:syncowe/components/spin_edit.dart';
 import 'package:syncowe/components/user_selector.dart';
 import 'package:syncowe/models/calculated_debt.dart';
 import 'package:syncowe/models/calculated_debt_summary_entry.dart';
@@ -39,6 +40,58 @@ class _EditTransactionForm extends State<EditTransactionForm>
 
   SplitType _splitType = SplitType.evenSplit;
   String? _payer;
+
+  void splitDebt(Debt debt) async
+  {
+    if(debt.amount > 0)
+    {
+      int? split = await showDialog<int>
+      (
+        context: context, 
+        builder: (context) 
+        {
+          int amount = 0;
+          return AlertDialog
+          (
+            icon: const Icon(Icons.call_split_rounded),
+            title: const Text("Split Debt"),
+            content: SpinEdit
+            (
+              minValue: 1,
+              onChange: (value) => setState(() => amount = value)
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(amount),
+                child: const Text("Split")
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(null),
+                child: const Text("Cancel")
+              )
+            ],
+          );
+        }
+      );
+
+      if (split != null && split > 0)
+      {
+        double amount = debt.amount / split;
+        int originalDebtIndex = _debts.indexOf(debt);
+        _debts.remove(debt);
+        for (int i = 0; i < split; i++)
+        {
+          _debts.insert(originalDebtIndex, Debt
+          (
+            amount: amount,
+            memo: "${debt.memo} / $split",
+            debtor: ""
+          ));
+        }
+        setState(() {});
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -260,43 +313,66 @@ class _EditTransactionForm extends State<EditTransactionForm>
                       showZeroValue: true,
                       initDoubleValue: debt.amount);
                     return ListTile(
-                      title: TextField(
-                        controller: memoController,
-                        onChanged: (value) => debt.memo = value,
-                        decoration: const InputDecoration(label: Text("Memo")),
-                      ),
-                      subtitle: Row(
-                        children: [
-                          Expanded(
-                            child: UserSelector(
-                              availableUserIds: parentTrip?.sharedWith ?? <String>[], 
-                              onSelectedUserChanged: (user) => 
-                                setState(() {
-                                  debt.debtor = user.id;
-                                }),
-                              label: "Debtor",
-                              initialUser: debt.debtor,
-                              openDirection: OptionsViewOpenDirection.up,
-                            ),
+                      title: Column(
+                        children: 
+                        [
+                          TextField(
+                            controller: memoController,
+                            onChanged: (value) => debt.memo = value,
+                            decoration: const InputDecoration(label: Text("Memo")),
                           ),
-                          const SizedBox(width: 15,),
-                          Expanded(
-                            child: TextField(
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              controller: amountController,
-                              onChanged: (value) => debt.amount = amountController.doubleValue,
-                              decoration: const InputDecoration(label: Text("Amount")),
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: UserSelector(
+                                  availableUserIds: parentTrip?.sharedWith ?? <String>[], 
+                                  onSelectedUserChanged: (user) => 
+                                    setState(() {
+                                      debt.debtor = user.id;
+                                    }),
+                                  label: "Debtor",
+                                  initialUser: debt.debtor,
+                                  openDirection: OptionsViewOpenDirection.up,
+                                ),
+                              ),
+                              const SizedBox(width: 15,),
+                              Expanded(
+                                child: TextField(
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  controller: amountController,
+                                  onChanged: (value) => debt.amount = amountController.doubleValue,
+                                  decoration: const InputDecoration(label: Text("Amount")),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ]
                       ),
-                      trailing: IconButton(
-                        onPressed: () => setState(() => _debts.removeAt(index)),
-                        icon: const Icon(Icons.delete),
-                      ),
+                      trailing: Wrap(
+                        children: 
+                        [
+                          IconButton(
+                            onPressed: () => setState(() => _debts.removeAt(index)),
+                            icon: const Icon(Icons.delete),
+                          ),
+                          IconButton(
+                            onPressed: () => splitDebt(debt),
+                            icon: const Icon(Icons.call_split_rounded),
+                          )
+                              // IconButton
+                              // (
+                              //   onPressed: () => setState(() => _debts.removeAt(index)),
+                              //   icon: const Icon(Icons.delete),
+                              //   padding: const EdgeInsets.all(0),
+                              //   constraints: const BoxConstraints(),
+                              // ),
+                              
+
+                        ]
+                      )
                     );
                   }
-                )
+                ),
               ],
             ),
           ),

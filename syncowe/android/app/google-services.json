@@ -12,7 +12,20 @@
           "package_name": "com.syncowe.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "134068539303-hsd51mq42b4mjg8moj3oa4dt75dl2qip.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.syncowe.app",
+            "certificate_hash": "7dfc2102f22949792b052b6f40d92ca721e477a5"
+          }
+        },
+        {
+          "client_id": "134068539303-j1b2q171ns7s6jj1v93uck83cclglvat.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAOHtkRjVdWGEh67vDtwoBsI0PxhSQpqec"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "134068539303-j1b2q171ns7s6jj1v93uck83cclglvat.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "134068539303-97p55nbommdmgclnusi4iekjfc9pn0sa.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.syncowe"
+              }
+            }
+          ]
         }
       }
     }

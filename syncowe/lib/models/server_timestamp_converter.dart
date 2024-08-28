@@ -14,9 +14,13 @@ class ServerTimestampConverter {
     {
       return fieldValue;
     }
-    if(fieldValue is DateTime)
+    else if(fieldValue is DateTime)
     {
       return Timestamp.fromDate(fieldValue);
+    }
+    else 
+    {
+      return null;
     }
   }
 }

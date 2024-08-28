@@ -52,7 +52,7 @@ class _ReimbursementsPage extends State<ReimbursementsPage>
           }
 
           
-          reimbursements.sort((a, b) => 
+          reimbursements.sort((b, a) => 
             ((a.data() as Reimbursement).createdDate as DateTime).compareTo((b.data() as Reimbursement).createdDate as DateTime));
 
           return StreamBuilder
