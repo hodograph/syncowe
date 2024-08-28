@@ -1,25 +1,29 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'reimbursement.dart';
+part of 'overall_debt_summary.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-Reimbursement _$ReimbursementFromJson(Map<String, dynamic> json) =>
-    Reimbursement(
+OverallDebtSummary _$OverallDebtSummaryFromJson(Map<String, dynamic> json) =>
+    OverallDebtSummary(
+      debtor: json['debtor'] as String,
       payer: json['payer'] as String,
-      recipient: json['recipient'] as String,
       amount: (json['amount'] as num).toDouble(),
-      confirmed: json['confirmed'] as bool? ?? false,
+      memo: json['memo'] as String,
+      transactionId: json['transactionId'] as String,
+      isReimbursement: json['isReimbursement'] as bool,
       createdDate: ServerTimestampConverter.fromJson(json['createdDate']),
     );
 
-Map<String, dynamic> _$ReimbursementToJson(Reimbursement instance) =>
+Map<String, dynamic> _$OverallDebtSummaryToJson(OverallDebtSummary instance) =>
     <String, dynamic>{
+      'debtor': instance.debtor,
       'payer': instance.payer,
-      'recipient': instance.recipient,
       'amount': instance.amount,
-      'confirmed': instance.confirmed,
+      'memo': instance.memo,
+      'transactionId': instance.transactionId,
+      'isReimbursement': instance.isReimbursement,
       'createdDate': ServerTimestampConverter.toJson(instance.createdDate),
     };

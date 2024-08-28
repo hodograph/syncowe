@@ -1,6 +1,7 @@
 import 'package:currency_textfield/currency_textfield.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:syncowe/models/calculated_debt_summary_entry.dart';
 import 'package:syncowe/models/transaction.dart';
 import 'package:syncowe/models/user.dart';
 import 'package:syncowe/pages/edit_transaction_form.dart';
@@ -52,6 +53,21 @@ class _TransactionSummaryPage extends State<TransactionSummaryPage>
     _transactionId = widget.transactionId;
     super.initState();
   }
+
+  TextField createCurrencyTextField(double amount)
+  {
+    return TextField(
+      readOnly: true,
+      controller: CurrencyTextFieldController(currencySymbol: '\$',
+        thousandSymbol: ',',
+        decimalSymbol: '.',
+        enableNegative: false,
+        showZeroValue: true,
+        initDoubleValue: amount),
+      decoration: const InputDecoration(
+        border: InputBorder.none),
+    );
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -70,133 +86,107 @@ class _TransactionSummaryPage extends State<TransactionSummaryPage>
         else
         {
           Transaction transaction = snapshot.data!;
+          List<String> userIds = transaction.calculatedDebts.map((x) => x.debtor).toList();
+
+          Map<String, List<CalculatedDebtSummaryEntry>> debtSummaries = 
+          { for(var calculatedDebt in transaction.calculatedDebts) calculatedDebt.debtor : calculatedDebt.summary };
+          
+          Map<String, double> debts = 
+          { for (var calculatedDebt in transaction.calculatedDebts) calculatedDebt.debtor : calculatedDebt.amount };
+
           return SafeArea(
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(transaction.transactionName),
-              centerTitle: true,
-              actions: [
-                IconButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => EditTransactionForm(tripId: _tripId, transactionId: _transactionId,))), 
-                  icon: const Icon(Icons.edit))
-              ],
-            ),
-            body: StreamBuilder(
-              stream: _tripFirestoreService.listenToDebts(_tripId, _transactionId), 
-              builder: (context, snapshot) 
-              {
-                if (snapshot.hasError)
+            child: Scaffold(
+              appBar: AppBar(
+                title: Text(transaction.transactionName),
+                centerTitle: true,
+                actions: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => EditTransactionForm(tripId: _tripId, transactionId: _transactionId,))), 
+                    icon: const Icon(Icons.edit))
+                ],
+              ),
+              body: StreamBuilder(
+                stream: _userFirestoreService.listToUsers(userIds), 
+                builder: (context, snapshot)
                 {
-                  return Center(child: Text("${snapshot.error!}"));
-                }
-                else if(!snapshot.hasData)
-                {
-                  return const Center(child: CircularProgressIndicator(),);
-                }
-                else
-                {
-                  return FutureBuilder(
-                    future: _tripFirestoreService.calculateDebtsForTransaction(_tripId, _transactionId), 
-                    builder: (context, snapshot) 
+                  if (snapshot.hasError)
+                  {
+                    return Center(child: Text("${snapshot.error!}"));
+                  }
+                  else if(!snapshot.hasData)
+                  {
+                    return const Center(child: CircularProgressIndicator(),);
+                  }
+                  else
+                  {
+                    Map<String, User> users = { for (var doc in snapshot.data!.docs) doc.id : doc.data() as User };
+
+                    List<PieChartSectionData> data = <PieChartSectionData>[];
+                    int counter = 0;
+
+                    for(MapEntry<String, double> debt in debts.entries)
                     {
-                      if (snapshot.hasError)
-                      {
-                        return Center(child: Text("${snapshot.error!}"));
-                      }
-                      else if(!snapshot.hasData)
-                      {
-                        return const Center(child: CircularProgressIndicator(),);
-                      }
-                      else
-                      {
-                        Map<String, CurrencyTextFieldController> debts = 
-                        {for (var doc in snapshot.data!.entries) doc.key : CurrencyTextFieldController(currencySymbol: '\$',
-                          thousandSymbol: ',',
-                          decimalSymbol: '.',
-                          enableNegative: false,
-                          showZeroValue: true,
-                          initDoubleValue: doc.value)};
+                      data.add(PieChartSectionData(
+                        value: debt.value,
+                        color: colorArray[counter % colorArray.length],
+                        showTitle: false
+                      ));
+                      counter++;
+                    }
 
-                        List<String> keys = debts.keys.toList();
-                        
-                        return StreamBuilder(
-                          stream: _userFirestoreService.listToUsers(keys), 
-                          builder: (context, snapshot)
-                          {
-                            if (snapshot.hasError)
+                    return Column(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: PieChart(PieChartData(sections: data)),
+                        ),
+                        const SizedBox(height: 15,),
+                        Expanded( 
+                          flex: 8,
+                          child: ListView.builder(
+                            itemCount: debts.length,
+                            shrinkWrap: true,
+                            itemBuilder: (context, index)
                             {
-                              return Center(child: Text("${snapshot.error!}"));
-                            }
-                            else if(!snapshot.hasData)
-                            {
-                              return const Center(child: CircularProgressIndicator(),);
-                            }
-                            else
-                            {
-                              Map<String, User> users = { for (var doc in snapshot.data!.docs) doc.id : doc.data() as User };
+                              String user = userIds[index];
+                              List<Widget> summaryWidgets = [];
 
-                              List<PieChartSectionData> data = <PieChartSectionData>[];
-                              int counter = 0;
-
-                              for(MapEntry<String, CurrencyTextFieldController> debt in debts.entries)
+                              for(CalculatedDebtSummaryEntry debtSummaryEntry in debtSummaries[user]!)
                               {
-                                data.add(PieChartSectionData(
-                                  value: debt.value.doubleValue,
-                                  color: colorArray[counter % colorArray.length],
-                                  showTitle: false
-                                ));
-                                counter++;
+                                summaryWidgets.add(
+                                  ListTile(
+                                    title: Text(debtSummaryEntry.memo),
+                                    subtitle: createCurrencyTextField(debtSummaryEntry.amount)
+                                  )
+                                );
                               }
 
-                              return Column(
-                                children: [
-                                  Flexible(
-                                    child: FractionallySizedBox(
-                                      heightFactor: 0.33,
-                                      child: PieChart(PieChartData(sections: data)),
-                                    ),
+                              return ExpansionTile(
+                                title: Text(users[user]!.displayName ?? users[user]!.email),
+                                subtitle: createCurrencyTextField(debts[user]!),
+                                leading: Container(
+                                  width: 16, 
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.rectangle,
+                                    color: colorArray[index % colorArray.length]
                                   ),
-                                  ListView.builder(
-                                    itemCount: debts.length,
-                                    shrinkWrap: true,
-                                    itemBuilder: (context, index)
-                                    {
-                                      String user = keys[index];
-
-                                      return ListTile(
-                                        title: Text(users[user]!.displayName ?? users[user]!.email),
-                                        subtitle: TextField(
-                                          readOnly: true,
-                                          controller: debts[user],
-                                          decoration: const InputDecoration(
-                                            border: InputBorder.none),
-                                        ),
-                                        leading: Container(
-                                          width: 16, 
-                                          height: 16,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.rectangle,
-                                            color: colorArray[index % colorArray.length]
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  )
-                                ],
+                                ),
+                                children: summaryWidgets,
                               );
                             }
-                          }
-                        );
-                      }
-                    }
-                  );
+                          )
+                        )
+                      ],
+                    );
+                  }
                 }
-              }
+              )
             )
-          )
-        );
+          );
         }
-      });
+      }
+    );
   }
 }

@@ -1,12 +1,12 @@
 import 'package:currency_textfield/currency_textfield.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:syncowe/components/user_selector.dart';
+import 'package:syncowe/models/calculated_debt.dart';
+import 'package:syncowe/models/calculated_debt_summary_entry.dart';
 import 'package:syncowe/models/debt.dart';
 import 'package:syncowe/models/split_type.dart';
 import 'package:syncowe/models/transaction.dart';
 import 'package:syncowe/models/trip.dart';
-import 'package:syncowe/models/user.dart';
 import 'package:syncowe/pages/transaction_summary_page.dart';
 import 'package:syncowe/services/firestore/trip_firestore.dart';
 
@@ -61,7 +61,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
         initDoubleValue: _transactionToEdit!.total);
       _splitType = _transactionToEdit!.splitType;
 
-      var debts = await _tripFirestoreService.getDebts(widget.tripId, widget.transactionId!);
+      var debts = _transactionToEdit!.debts;
       for (Debt debt in debts)
       {
         _debts.add(debt);
@@ -72,6 +72,63 @@ class _EditTransactionForm extends State<EditTransactionForm>
     setState(() {
       parentTrip = trip;
     });
+  }
+
+  void calculateDebts(Transaction transaction)
+  {
+    for (Debt debt in transaction.debts)
+    {
+      CalculatedDebt calculatedDebt = transaction.calculatedDebts.firstWhere((x) => x.debtor == debt.debtor,
+        orElse: () => CalculatedDebt(debtor: debt.debtor, owedTo: transaction.payer));
+        
+      calculatedDebt.amount += debt.amount;
+      String memo = debt.memo;
+
+      if (memo.isEmpty)
+      {
+        memo = "Item${transaction.debts.indexOf(debt)}";
+      }
+
+      calculatedDebt.summary.add(CalculatedDebtSummaryEntry(memo: memo, amount: debt.amount));
+
+      // Ther is no addOrUpdate method so remove in case this calculated debt already existed.
+      transaction.calculatedDebts.remove(calculatedDebt);
+      transaction.calculatedDebts.add(calculatedDebt);
+    }
+
+    if (!transaction.calculatedDebts.any((x) => x.debtor == transaction.payer))
+    {
+      transaction.calculatedDebts.add(CalculatedDebt(debtor: transaction.payer, owedTo: transaction.payer));
+    }
+
+    double totalDebts = transaction.calculatedDebts.fold(0, (a, b) => a + b.amount);
+    double remainder = transaction.total - totalDebts;
+
+    if (transaction.splitType == SplitType.evenSplit)
+    {
+      for (CalculatedDebt calculatedDebt in transaction.calculatedDebts)
+      {
+        double remainderSplit = remainder/transaction.calculatedDebts.length;
+        calculatedDebt.amount += remainderSplit;
+        calculatedDebt.summary.add(CalculatedDebtSummaryEntry(memo: "Remainder Split", amount: remainderSplit));
+      }
+    }
+    else if (transaction.splitType == SplitType.proportionalSplit)
+    {
+      for (CalculatedDebt calculatedDebt in transaction.calculatedDebts)
+      {
+        double proportionalPercent = calculatedDebt.amount / totalDebts;
+        double remainderSplit = remainder * proportionalPercent;
+        calculatedDebt.amount += remainderSplit;
+        calculatedDebt.summary.add(CalculatedDebtSummaryEntry(memo: "Remainder Split", amount: remainderSplit));
+      }
+    }
+    else if(transaction.splitType == SplitType.payerPays)
+    {
+      CalculatedDebt payerDebt = transaction.calculatedDebts.firstWhere((x) => x.debtor == transaction.payer);
+      payerDebt.amount += remainder;
+      payerDebt.summary.add(CalculatedDebtSummaryEntry(memo: "Remainder", amount: remainder));
+    }
   }
 
   Future<void> submitTransaction() async
@@ -89,10 +146,13 @@ class _EditTransactionForm extends State<EditTransactionForm>
               transactionName: _nameController.text,
               payer: _payer!, 
               total: _totalAmountController.doubleValue,
-              splitType: _splitType);
+              splitType: _splitType,
+              debts: _debts,
+              createdDate: widget.transactionId == null ? null : _transactionToEdit!.createdDate);
+
+            calculateDebts(transaction);
 
             String docId = await _tripFirestoreService.addOrUpdateTransaction(transaction, widget.tripId, widget.transactionId);
-            _tripFirestoreService.writeAllDebts(_debts, widget.tripId, docId);
 
             if (mounted)
             {
@@ -106,8 +166,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (context) => TransactionSummaryPage(tripId: widget.tripId, transactionId: docId)));
             }
-            
-        }
+          }
         }
       }
     }
@@ -144,6 +203,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
                 ),
                 const SizedBox(height: 15,),
                 TextField(
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   controller: _totalAmountController,
                   decoration: const InputDecoration(label: Text("Total")),
                 ),
@@ -216,11 +276,13 @@ class _EditTransactionForm extends State<EditTransactionForm>
                                 }),
                               label: "Debtor",
                               initialUser: debt.debtor,
+                              openDirection: OptionsViewOpenDirection.up,
                             ),
                           ),
                           const SizedBox(width: 15,),
                           Expanded(
                             child: TextField(
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
                               controller: amountController,
                               onChanged: (value) => debt.amount = amountController.doubleValue,
                               decoration: const InputDecoration(label: Text("Amount")),

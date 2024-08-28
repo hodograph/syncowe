@@ -8,8 +8,14 @@ class UserSelector extends StatefulWidget
   final ValueChanged<User> onSelectedUserChanged;
   final String? initialUser;
   final String label;
+  final OptionsViewOpenDirection openDirection;
 
-  const UserSelector({super.key, required this.availableUserIds, required this.onSelectedUserChanged, required this.label, this.initialUser});
+  const UserSelector({super.key, 
+    required this.availableUserIds, 
+    required this.onSelectedUserChanged, 
+    required this.label, 
+    this.initialUser,
+    this.openDirection = OptionsViewOpenDirection.down});
 
   @override
   State<StatefulWidget> createState() => _UserSelector();
@@ -52,7 +58,7 @@ class _UserSelector extends State<UserSelector>
     initUserData();
     
     return Autocomplete<User>(
-      optionsViewOpenDirection: OptionsViewOpenDirection.up,
+      optionsViewOpenDirection: widget.openDirection,
       optionsBuilder: (textEditingValue)
       {
         if (textEditingValue.text == '')

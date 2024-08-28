@@ -16,6 +16,11 @@ class UserFirestoreService {
     }
   }
 
+  String currentUserId()
+  {
+    return _firebaseAuth.currentUser!.uid;
+  }
+
   Future<syncowe_user.User?> getUser(String? id) async
   {
     id ??= _firebaseAuth.currentUser!.uid;

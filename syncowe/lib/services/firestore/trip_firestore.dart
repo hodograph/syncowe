@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:syncowe/models/debt.dart';
+import 'package:syncowe/models/debt_pair.dart';
+import 'package:syncowe/models/overall_debt_summary.dart';
 import 'package:syncowe/models/reimbursement.dart';
-import 'package:syncowe/models/split_type.dart';
 import 'package:syncowe/models/trip.dart';
 import 'package:syncowe/models/transaction.dart' as syncowe_transaction;
 
@@ -107,123 +107,51 @@ class TripFirestoreService
     }
   }
 
-  Future<Map<String, double>> calculateDebtsForTransaction(String tripId, String transactionId) async
+  CollectionReference _reimbursements(String tripId)
   {
-    Map<String, double> calculatedDebts = <String, double>{};
-    
-    var transaction = await getTransaction(tripId, transactionId);
-    List<Debt> debts = await getDebts(tripId, transactionId);
+    return getTripDoc(tripId).collection("Reimbursements").withConverter<Reimbursement>(
+      fromFirestore: Reimbursement.fromFirestore, 
+      toFirestore: (reimbursement, options) => reimbursement.toJson());
+  }
 
-    if (transaction != null)
+  Future<void> addOrUpdateReimbursement(Reimbursement reimbursement, String tripId, String? id) async
+  {
+    if(id == null)
     {
-      for (Debt debt in debts)
-      {
-        calculatedDebts[debt.debtor] = (calculatedDebts[debt.debtor] ?? 0) + debt.amount;
-      }
-
-      if (!calculatedDebts.containsKey(transaction.payer))
-      {
-        calculatedDebts[transaction.payer] = 0;
-      }
-
-      double totalDebts = calculatedDebts.values.reduce((a, b) => a + b);
-      double remainder = transaction.total - totalDebts;
-
-      if (transaction.splitType == SplitType.evenSplit)
-      {
-        for (String debtor in calculatedDebts.keys)
-        {
-          calculatedDebts[debtor] = calculatedDebts[debtor]! + (remainder/calculatedDebts.length);
-        }
-      }
-      else if (transaction.splitType == SplitType.proportionalSplit)
-      {
-        for (String debtor in calculatedDebts.keys)
-        {
-          double proportionalPercent = calculatedDebts[debtor]! / totalDebts;
-          calculatedDebts[debtor] = calculatedDebts[debtor]! + (remainder * proportionalPercent);
-        }
-      }
-      else if(transaction.splitType == SplitType.payerPays)
-      {
-        calculatedDebts[transaction.payer] = calculatedDebts[transaction.payer]! + remainder;
-      }
-    }
-
-    return calculatedDebts;
-  }
-
-  CollectionReference _debts(String tripId, String transactionId)
-  {
-    return getTransactionDoc(tripId, transactionId).collection("Debts").withConverter<Debt>(
-      fromFirestore: Debt.fromFirestore, 
-      toFirestore: (debt, options) => debt.toJson());
-  }
-
-  Future<List<Debt>> getDebts(String tripId, String transactionId) async
-  {
-    var debtSnapshots = await _debts(tripId, transactionId).get();
-    return debtSnapshots.docs.map((snapshot) => snapshot.data() as Debt).toList();
-  }
-
-  Stream<Debt?> listenToDebt(String tripId, String transactionId, String id)
-  {
-    return _debts(tripId, transactionId).doc(id).snapshots().map((snapshot) => snapshot.data() as Debt);
-  }
-
-  Future<Debt?> getDebt(String tripId, String transactionId, String id) async
-  {
-    Debt? debt;
-    final docRef = getDebtDoc(tripId, transactionId, id);
-    final doc = await docRef.get();
-
-    if(doc.exists)
-    {
-      debt = doc.data() as Debt;
-    }
-
-    return debt;
-  }
-
-  DocumentReference getDebtDoc(String tripId, String transactionId, String debtId)
-  {
-    return _debts(tripId, transactionId).doc(debtId);
-  }
-
-  Stream<QuerySnapshot> listenToDebts(String tripId, String transactionId)
-  {
-    return _debts(tripId, transactionId).snapshots();
-  }
-
-  Future<void> addOrUpdateDebt(Debt debt, String tripId, String transactionId, String? id) async
-  {
-    if (id == null)
-    {
-      await _debts(tripId, transactionId).add(debt);
+      await _reimbursements(tripId).add(reimbursement);
     }
     else
     {
-      await _debts(tripId, transactionId).doc(id).set(debt);
+      await _reimbursements(tripId).doc(id).set(reimbursement);
     }
   }
 
-  Future<void> writeAllDebts(List<Debt> debts, String tripId, String transactionId) async
+  Stream<QuerySnapshot> listenToReimbursements(String tripId)
   {
-    CollectionReference debtsCollection = _debts(tripId, transactionId);
-    var debtDocs = await debtsCollection.get();
-    for(QueryDocumentSnapshot snapshot in debtDocs.docs)
-    {
-      snapshot.reference.delete();
-    }
-
-    for(Debt debt in debts)
-    {
-      debtsCollection.add(debt);
-    }
+    return _reimbursements(tripId).snapshots();
   }
 
-  CollectionReference _reimbursements(String tripId)
+  CollectionReference _overallDebts(String tripId)
   {
-    return getTripDoc(tripId).collection("Reimbursements");
+    return _trips.doc(tripId).collection("OverallDebts").withConverter<DebtPair>(
+      fromFirestore: DebtPair.fromFirestore,
+      toFirestore: (debtPair, options) => debtPair.toJson());
+  }
+
+  Stream<QuerySnapshot> listenToOverallDebts(String tripId)
+  {
+    return _overallDebts(tripId).snapshots();
+  }
+
+  CollectionReference _overallDebtSummary(String tripId, String debtPairId)
+  {
+    return _overallDebts(tripId).doc(debtPairId).collection("OverallDebtSummary").withConverter<OverallDebtSummary>(
+      fromFirestore: OverallDebtSummary.fromFirestore, 
+      toFirestore: (summary, options) => summary.toJson());
+  }
+
+  Stream<QuerySnapshot> listenToOverallDebtSummary(String tripId, String debtPairId)
+  {
+    return _overallDebtSummary(tripId, debtPairId).snapshots();
   }
 }

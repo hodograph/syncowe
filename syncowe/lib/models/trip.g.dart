@@ -14,6 +14,7 @@ Trip _$TripFromJson(Map<String, dynamic> json) => Trip(
               .toList() ??
           const <String>[],
       isArchived: json['isArchived'] as bool? ?? false,
+      createdDate: ServerTimestampConverter.fromJson(json['createdDate']),
     );
 
 Map<String, dynamic> _$TripToJson(Trip instance) => <String, dynamic>{
@@ -21,4 +22,5 @@ Map<String, dynamic> _$TripToJson(Trip instance) => <String, dynamic>{
       'owner': instance.owner,
       'sharedWith': instance.sharedWith,
       'isArchived': instance.isArchived,
+      'createdDate': ServerTimestampConverter.toJson(instance.createdDate),
     };

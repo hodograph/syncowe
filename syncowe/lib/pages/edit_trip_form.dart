@@ -81,29 +81,33 @@ class _EditTripForm extends State<EditTripForm>
         body: 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 25.0),
-          child: Column
+          child: 
+          SingleChildScrollView
           (
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 15,),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(label: Text("Trip Name")),
-              ),
-              const SizedBox(height: 15,),
-              UserManager(
-                onChange: (users) => setState(() {
-                  _users = users.map((x) => x.id).toList();
-                }), 
-                users: _users),
-              const SizedBox(height: 15,),
-              Center( 
-                child: TextButton(
-                  onPressed: () => updateTrip(), 
-                  child: Text("${widget.tripId == null ? "Create" : "Update"} Trip")
+            child: Column
+            (
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 15,),
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(label: Text("Trip Name")),
+                ),
+                const SizedBox(height: 15,),
+                UserManager(
+                  onChange: (users) => setState(() {
+                    _users = users.map((x) => x.id).toList();
+                  }), 
+                  users: _users),
+                const SizedBox(height: 15,),
+                Center( 
+                  child: TextButton(
+                    onPressed: () => updateTrip(), 
+                    child: Text("${widget.tripId == null ? "Create" : "Update"} Trip")
+                  )
                 )
-              )
-            ],
+              ],
+            )
           )
         ),
       ),

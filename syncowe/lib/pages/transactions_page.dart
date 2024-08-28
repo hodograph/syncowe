@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:syncowe/models/calculated_debt.dart';
 import 'package:syncowe/models/transaction.dart';
 import 'package:syncowe/models/user.dart';
 import 'package:syncowe/pages/transaction_summary_page.dart';
 import 'package:syncowe/services/firestore/trip_firestore.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
+import 'package:collection/collection.dart';
 
 class TransactionsPage extends StatefulWidget
 {
@@ -18,6 +21,26 @@ class _TransactionPage extends State<TransactionsPage>
 {
   final TripFirestoreService _tripFirestoreService = TripFirestoreService();
   final UserFirestoreService _userFirestoreService = UserFirestoreService();
+
+  double getPersonalChange(Transaction transaction, String user)
+  {
+    if(transaction.payer == user)
+    {
+      CalculatedDebt payerDebt = transaction.calculatedDebts.firstWhere((x) => x.debtor == user);
+      return transaction.total - payerDebt.amount;
+    }
+    else
+    {
+      CalculatedDebt? personalDebt = transaction.calculatedDebts.firstWhereOrNull((x) => x.debtor == user);
+      if (personalDebt != null)
+      {
+        return personalDebt.amount;
+      }
+      else{
+        return 0;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,11 +71,22 @@ class _TransactionPage extends State<TransactionsPage>
             );
           }
 
+          transactions.sort((a, b) => 
+            ((a.data() as Transaction).createdDate as DateTime).compareTo((b.data() as Transaction).createdDate as DateTime));
+
           return ListView.builder(
             itemCount: transactions.length,
             itemBuilder: (context, index) 
             {
               final transaction = transactions[index].data() as Transaction;
+
+              double personalChange = getPersonalChange(transaction, _userFirestoreService.currentUserId());
+              Color changeColor = personalChange == 0 ? 
+                Theme.of(context).colorScheme.onPrimary : 
+                transaction.payer == _userFirestoreService.currentUserId() ? 
+                  Colors.green : 
+                  Colors.red;
+
               return ListTile(
                 title: Text(transaction.transactionName),
                 subtitle: FutureBuilder(
@@ -81,8 +115,22 @@ class _TransactionPage extends State<TransactionsPage>
                     }
                   },
                 ),
-                leading: Text("\$${transaction.total}",
-                  style: Theme.of(context).textTheme.headlineLarge,
+                leading: Text(
+                  NumberFormat.currency(
+                    locale: "en_US", 
+                    symbol: "\$")
+                  .format(transaction.total),
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                trailing: Text( personalChange != 0 ?
+                  NumberFormat.currency(
+                    locale: "en_US", 
+                    symbol: "\$")
+                  .format(personalChange) :
+                  "-",
+                  style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                    color: changeColor
+                  ),
                 ),
                 onTap: () {
                   Navigator.of(context).push(

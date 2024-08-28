@@ -18,6 +18,7 @@ abstract class NameofTrip {
   static const String fieldOwner = 'owner';
   static const String fieldSharedWith = 'sharedWith';
   static const String fieldIsArchived = 'isArchived';
+  static const String fieldCreatedDate = 'createdDate';
 
   static const String functionToJson = 'toJson';
 }

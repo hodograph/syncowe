@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
 import 'package:syncowe/models/trip.dart';
+import 'package:syncowe/pages/create_reimbursement_form.dart';
 import 'package:syncowe/pages/edit_transaction_form.dart';
 import 'package:syncowe/pages/edit_trip_form.dart';
 import 'package:syncowe/pages/transactions_page.dart';
+import 'package:syncowe/pages/trip_overview_page.dart';
 import 'package:syncowe/services/firestore/trip_firestore.dart';
 
 class TripPage extends StatefulWidget
@@ -57,6 +59,7 @@ class _TripPage extends State<TripPage>
               title: Text(Provider.of<Trip?>(context)?.name ?? "Trip"),
               centerTitle: true,
               bottom: const TabBar(
+                labelPadding: EdgeInsets.all(0),
                 tabs: [
                   Tab(
                     icon: Icon(Icons.data_thresholding),
@@ -83,7 +86,7 @@ class _TripPage extends State<TripPage>
             ),
             body: TabBarView(
               children: [
-                const Center(child: Text("Overview TBD"),),
+                TripOverviewPage(tripId: _tripId),
                 TransactionsPage(tripId: _tripId),
                 const Center(child: Text("There are no reimbursements"),)
               ],
@@ -101,7 +104,9 @@ class _TripPage extends State<TripPage>
                 ),
                 SpeedDialChild(
                   child: const Icon(Icons.money_off_csred_rounded),
-                  label: "Reimbursement"
+                  label: "Reimbursement",
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => CreateReimbursementForm(tripId: _tripId))),
                 )
               ],
             ),

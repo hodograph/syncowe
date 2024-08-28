@@ -23,6 +23,10 @@ class _TripsPage extends State<TripsPage>
     return DefaultTabController(
       length: 2, 
       child: Scaffold(
+        appBar: AppBar(
+          title: const Text("SyncOwe"),
+          centerTitle: true,
+        ),
         body: StreamBuilder(
           stream: _tripsFirestoreService.listenToTrips(), 
           builder: (context, snapshot)

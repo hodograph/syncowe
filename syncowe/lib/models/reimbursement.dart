@@ -1,18 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:syncowe/models/server_timestamp_converter.dart';
 part 'reimbursement.g.dart';
 
 @JsonSerializable()
 class Reimbursement
 {
-  final String id;
-  final String tripId;
   final String payer;
   final String recipient;
   final double amount;
-  final bool confirmed;
+  bool confirmed;
 
-  Reimbursement({required this.id, required this.tripId, required this.payer, required this.recipient, required this.amount, this.confirmed = false});
+  @JsonKey(
+    toJson: ServerTimestampConverter.toJson,
+    fromJson: ServerTimestampConverter.fromJson
+  )
+  final Object? createdDate;
+
+  Reimbursement({required this.payer,
+    required this.recipient,
+    required this.amount,
+    this.confirmed = false,
+    Object? createdDate}) : createdDate = createdDate ?? FieldValue.serverTimestamp();
 
   factory Reimbursement.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? options) => Reimbursement.fromJson(snapshot.data()!);
 
