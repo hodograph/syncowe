@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:currency_textfield/currency_textfield.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:syncowe/components/spin_edit.dart';
 import 'package:syncowe/components/user_selector.dart';
@@ -38,6 +44,8 @@ class _EditTransactionForm extends State<EditTransactionForm>
 
   final List<Debt> _debts = <Debt>[];
 
+  bool processingImage = false;
+
   SplitType _splitType = SplitType.evenSplit;
   String? _payer;
 
@@ -57,7 +65,8 @@ class _EditTransactionForm extends State<EditTransactionForm>
             title: const Text("Split Debt"),
             content: SpinEdit
             (
-              minValue: 1,
+              minValue: 2,
+              initialValue: 2,
               onChange: (value) => setState(() => amount = value)
             ),
             actions: [
@@ -74,7 +83,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
         }
       );
 
-      if (split != null && split > 0)
+      if (split != null && split > 1)
       {
         double amount = debt.amount / split;
         int originalDebtIndex = _debts.indexOf(debt);
@@ -225,6 +234,42 @@ class _EditTransactionForm extends State<EditTransactionForm>
     }
   }
 
+  Future<void> populateFromReceipt() async
+  {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
+
+    if (result != null)
+    {
+      processingImage = true;
+      setState(() {});
+
+      try
+      {
+        final callResult = await FirebaseFunctions.instance.httpsCallable("readReceipt").call(base64Encode(result.files.single.bytes!.toList()));
+
+        final transaction = Transaction.fromJson(callResult.data);
+        _nameController.text = transaction.transactionName;
+        _splitType = transaction.splitType;
+        _totalAmountController.text = transaction.total.toString();
+
+        _debts.clear();
+        _debts.addAll(transaction.debts);
+      }
+      catch(e)
+      {
+        if(mounted)
+        {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        }
+      }
+      finally
+      {
+        processingImage = false;
+        setState(() {});
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea
@@ -233,6 +278,16 @@ class _EditTransactionForm extends State<EditTransactionForm>
         appBar: AppBar(
           title: Text("${widget.transactionId == null ? "Create" : "Edit"} Transaction"),
           centerTitle: true,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 25.0),
+              child: FilledButton.icon(
+                onPressed: populateFromReceipt, 
+                label: const Text("Auto-Populate"),
+                icon: processingImage? CircularProgressIndicator(color: Theme.of(context).primaryColor, strokeAlign: -1,) : const Icon(Icons.camera_alt),
+              )
+            )
+          ],
         ),
         body: 
         Padding(

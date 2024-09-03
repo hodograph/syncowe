@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAOHtkRjVdWGEh67vDtwoBsI0PxhSQpqec',
+    apiKey: 'AIzaSyBqOp804osvrh58VKBdLsUUBAvFGuQtWs0',
     appId: '1:134068539303:android:3d559dc7adfbec0b457082',
     messagingSenderId: '134068539303',
     projectId: 'syncowe',
@@ -64,7 +64,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '134068539303',
     projectId: 'syncowe',
     storageBucket: 'syncowe.appspot.com',
-    iosBundleId: 'com.syncowe.app',
+    androidClientId: '134068539303-hsd51mq42b4mjg8moj3oa4dt75dl2qip.apps.googleusercontent.com',
+    iosClientId: '134068539303-97p55nbommdmgclnusi4iekjfc9pn0sa.apps.googleusercontent.com',
+    iosBundleId: 'com.example.syncowe',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -73,7 +75,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '134068539303',
     projectId: 'syncowe',
     storageBucket: 'syncowe.appspot.com',
-    iosBundleId: 'com.syncowe.app',
+    androidClientId: '134068539303-hsd51mq42b4mjg8moj3oa4dt75dl2qip.apps.googleusercontent.com',
+    iosClientId: '134068539303-97p55nbommdmgclnusi4iekjfc9pn0sa.apps.googleusercontent.com',
+    iosBundleId: 'com.example.syncowe',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

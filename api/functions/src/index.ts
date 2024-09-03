@@ -3,8 +3,14 @@ import {onDocumentCreated, onDocumentUpdated}
 import * as admin from "firebase-admin";
 import {DocumentReference, FieldValue, Timestamp}
   from "firebase-admin/firestore";
+//import {defineSecret} from "firebase-functions/params";
+import {onCall} from "firebase-functions/v2/https";
+import DocumentIntelligence,
+{AnalyzeResultOperationOutput,
+  getLongRunningPoller,
+  isUnexpected} from "@azure-rest/ai-document-intelligence";
 
-// All available logging functions
+//All available logging functions
 // import {log}
 //   from "firebase-functions/logger";
 
@@ -15,6 +21,108 @@ const transactionsCollectionName = "Transactions";
 const reimbursementsCollectionName = "Reimbursements";
 const overallDebtsCollectionName = "OverallDebts";
 const overallDebtSummaryCollectionName = "OverallDebtSummary";
+
+//const azureDocApiKey = defineSecret("AZURE_DOC_INTEL_API_KEY");
+//const azureDocApiEndpoint = defineSecret("AZURE_DOC_INTEL_ENDPOINT");
+
+exports.readReceipt = onCall({secrets: ["AZURE_DOC_INTEL_API_KEY", "AZURE_DOC_INTEL_ENDPOINT"]}, async (request) => {
+  if (request.auth?.token != undefined) {
+    const client = DocumentIntelligence(process.env.AZURE_DOC_INTEL_ENDPOINT ?? "", {
+      key: process.env.AZURE_DOC_INTEL_API_KEY ?? "",
+    });
+
+    const initialResponse =
+      await client.path("/documentModels/{modelId}:analyze",
+        "prebuilt-receipt")
+        .post({
+          contentType: "application/json",
+          body: {
+            base64Source: request.data
+          },
+        });
+
+    if (isUnexpected(initialResponse)) {
+      throw initialResponse.body.error;
+    }
+
+    const poller = await getLongRunningPoller(client, initialResponse);
+
+    const analyzeResult = ((await (poller).pollUntilDone())
+      .body as AnalyzeResultOperationOutput).analyzeResult;
+
+    const documents = analyzeResult?.documents;
+
+    const document = documents && documents[0];
+
+    if (document) {
+      if (document.fields != undefined) {
+        let total: number = 0;
+        const transactionName = document.fields["MerchantName"].valueString;
+        const totalField = document.fields["Total"];
+
+        // If total failed to be extracted, attempt to create it from subtotal, tip, and tax.
+        if (totalField == undefined || totalField.valueCurrency == undefined)
+        {
+          const subtotal = document.fields["Subtotal"].valueCurrency;
+          if (subtotal != undefined)
+          {
+            total += subtotal.amount;
+          }
+
+          const tip = document.fields["Tip"].valueCurrency;
+          if (tip != undefined)
+          {
+            total += tip.amount;
+          }
+
+          const totalTax = document.fields["TotalTax"].valueCurrency;
+          if (totalTax != undefined)
+          {
+            total += totalTax.amount;
+          }
+        }
+        else
+        {
+          total = totalField.valueCurrency.amount;
+        }
+
+        const debts: Debt[] = [];
+
+        document.fields["Items"].valueArray?.forEach((item) => {
+          if (item.valueObject != undefined) {
+            const itemQuantity = item.valueObject["Quantity"];
+
+            if (itemQuantity.valueNumber != undefined) {
+              const amount = itemQuantity.valueNumber;
+              for (let i = 0; i < amount; i++) {
+                const memo = item.valueObject["Description"].valueString;
+                const itemPrice = (item.valueObject["TotalPrice"].valueCurrency?.amount ?? 0) / amount;
+
+                if (itemPrice != undefined) {
+                  debts.push(new Debt(itemPrice, "", memo ?? ""));
+                }
+                
+              }
+            }
+          }
+        });
+
+        const transaction = new Transaction(transactionName ?? "",
+          "",
+          SplitType.proportionalSplit,
+          total ?? 0,
+          debts,
+          [],
+          undefined
+        );
+
+        return serializeFS(transaction);
+      }
+    }
+  }
+
+  return undefined;
+});
 
 exports.transactionCreated = onDocumentCreated(`/${tripsCollectionName}` +
   `/{tripId}/${transactionsCollectionName}/{transactionId}`,
@@ -124,7 +232,7 @@ async function updateOverallSummariesFromTransaction(
         transactionId,
         false,
         false,
-        newTransaction.createdDate)));
+        newTransaction.createdDate!)));
   });
 }
 
@@ -332,7 +440,7 @@ class Transaction {
   total: number;
   debts: Debt[];
   calculatedDebts: CalculatedDebt[];
-  createdDate: Timestamp;
+  createdDate: Timestamp | undefined;
 
   /**
    *
@@ -342,7 +450,7 @@ class Transaction {
    * @param {number} total the total amount spent for this transaction.
    * @param {Debt[]} debts the debts for this transaction.
    * @param {CalculatedDebt[]} calculatedDebts the calculated debts.
-   * @param {Timestamp} createdDate time this was created.
+   * @param {Timestamp | undefined} createdDate time this was created.
    */
   public constructor(transactionName: string,
     payer: string,
@@ -350,7 +458,7 @@ class Transaction {
     total: number,
     debts: Debt[],
     calculatedDebts: CalculatedDebt[],
-    createdDate: Timestamp ) {
+    createdDate: Timestamp | undefined ) {
     this.transactionName = transactionName;
     this.payer = payer;
     this.splitType = splitType;

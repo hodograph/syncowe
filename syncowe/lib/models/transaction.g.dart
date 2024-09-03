@@ -6,17 +6,18 @@ part of 'transaction.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Transaction _$TransactionFromJson(Map<String, dynamic> json) => Transaction(
+Transaction _$TransactionFromJson(Map json) => Transaction(
       transactionName: json['transactionName'] as String,
       payer: json['payer'] as String,
       total: (json['total'] as num).toDouble(),
       splitType: $enumDecodeNullable(_$SplitTypeEnumMap, json['splitType']) ??
           SplitType.evenSplit,
       debts: (json['debts'] as List<dynamic>?)
-          ?.map((e) => Debt.fromJson(e as Map<String, dynamic>))
+          ?.map((e) => Debt.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
       calculatedDebts: (json['calculatedDebts'] as List<dynamic>?)
-          ?.map((e) => CalculatedDebt.fromJson(e as Map<String, dynamic>))
+          ?.map((e) =>
+              CalculatedDebt.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
       createdDate: ServerTimestampConverter.fromJson(json['createdDate']),
     );
@@ -27,9 +28,8 @@ Map<String, dynamic> _$TransactionToJson(Transaction instance) =>
       'payer': instance.payer,
       'total': instance.total,
       'splitType': _$SplitTypeEnumMap[instance.splitType]!,
-      'debts': instance.debts.map((e) => e.toJson()).toList(),
-      'calculatedDebts':
-          instance.calculatedDebts.map((e) => e.toJson()).toList(),
+      'debts': instance.debts,
+      'calculatedDebts': instance.calculatedDebts,
       'createdDate': ServerTimestampConverter.toJson(instance.createdDate),
     };
 
