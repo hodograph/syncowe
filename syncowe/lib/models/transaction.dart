@@ -6,7 +6,7 @@ import 'package:syncowe/models/server_timestamp_converter.dart';
 import 'package:syncowe/models/split_type.dart';
 part 'transaction.g.dart';
 
-@JsonSerializable(anyMap: true)
+@JsonSerializable(anyMap: true, explicitToJson: true)
 class Transaction
 {
   final String transactionName;

@@ -28,8 +28,9 @@ Map<String, dynamic> _$TransactionToJson(Transaction instance) =>
       'payer': instance.payer,
       'total': instance.total,
       'splitType': _$SplitTypeEnumMap[instance.splitType]!,
-      'debts': instance.debts,
-      'calculatedDebts': instance.calculatedDebts,
+      'debts': instance.debts.map((e) => e.toJson()).toList(),
+      'calculatedDebts':
+          instance.calculatedDebts.map((e) => e.toJson()).toList(),
       'createdDate': ServerTimestampConverter.toJson(instance.createdDate),
     };
 
