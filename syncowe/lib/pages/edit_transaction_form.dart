@@ -16,6 +16,7 @@ import 'package:syncowe/models/transaction.dart';
 import 'package:syncowe/models/trip.dart';
 import 'package:syncowe/pages/transaction_summary_page.dart';
 import 'package:syncowe/services/firestore/trip_firestore.dart';
+import 'package:syncowe/services/firestore/user_firestore.dart';
 
 class EditTransactionForm extends StatefulWidget
 {
@@ -58,7 +59,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
         context: context, 
         builder: (context) 
         {
-          int amount = 0;
+          int amount = 2;
           return AlertDialog
           (
             icon: const Icon(Icons.call_split_rounded),
@@ -66,7 +67,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
             content: SpinEdit
             (
               minValue: 2,
-              initialValue: 2,
+              initialValue: amount,
               onChange: (value) => setState(() => amount = value)
             ),
             actions: [
@@ -128,6 +129,10 @@ class _EditTransactionForm extends State<EditTransactionForm>
       {
         _debts.add(debt);
       }
+    }
+    else
+    {
+      _payer = UserFirestoreService().currentUserId();
     }
 
     Trip? trip = await _tripFirestoreService.getTrip(widget.tripId);
