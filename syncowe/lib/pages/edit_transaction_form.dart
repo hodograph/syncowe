@@ -91,14 +91,15 @@ class _EditTransactionForm extends State<EditTransactionForm>
         _debts.remove(debt);
         for (int i = 0; i < split; i++)
         {
-          _debts.insert(originalDebtIndex, Debt
-          (
-            amount: amount,
-            memo: "${debt.memo} / $split",
-            debtor: ""
-          ));
+          setState(() {
+            _debts.insert(originalDebtIndex, Debt
+            (
+              amount: amount,
+              memo: "${debt.memo} / $split",
+              debtor: ""
+            ));
+          });
         }
-        setState(() {});
       }
     }
   }
@@ -200,6 +201,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
 
   Future<void> submitTransaction() async
   {
+    String? error;
     // TODO: error logging.
     if(_nameController.text.isNotEmpty)
     {
@@ -207,35 +209,63 @@ class _EditTransactionForm extends State<EditTransactionForm>
       {
         if(_debts.isNotEmpty)
         {
-          if(_totalAmountController.text.isNotEmpty)
+          if(_debts.every((debt) => debt.debtor.isNotEmpty))
           {
-            var transaction = Transaction(
-              transactionName: _nameController.text,
-              payer: _payer!, 
-              total: _totalAmountController.doubleValue,
-              splitType: _splitType,
-              debts: _debts,
-              createdDate: widget.transactionId == null ? null : _transactionToEdit!.createdDate);
-
-            calculateDebts(transaction);
-
-            String docId = await _tripFirestoreService.addOrUpdateTransaction(transaction, widget.tripId, widget.transactionId);
-
-            if (mounted)
+            if(_totalAmountController.text.isNotEmpty && _totalAmountController.doubleValue > 0)
             {
-              // If this is editing a transaction, go up one page before pushing replacement.
-              // Pushing replacement forces a refresh of the summary page.
-              if(widget.transactionId != null)
+              var transaction = Transaction(
+                transactionName: _nameController.text,
+                payer: _payer!, 
+                total: _totalAmountController.doubleValue,
+                splitType: _splitType,
+                debts: _debts,
+                createdDate: widget.transactionId == null ? null : _transactionToEdit!.createdDate);
+
+              calculateDebts(transaction);
+
+              String docId = await _tripFirestoreService.addOrUpdateTransaction(transaction, widget.tripId, widget.transactionId);
+
+              if (mounted)
               {
-                Navigator.of(context).pop();
+                // If this is editing a transaction, go up one page before pushing replacement.
+                // Pushing replacement forces a refresh of the summary page.
+                if(widget.transactionId != null)
+                {
+                  Navigator.of(context).pop();
+                }
+                
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => TransactionSummaryPage(tripId: widget.tripId, transactionId: docId)));
               }
-              
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => TransactionSummaryPage(tripId: widget.tripId, transactionId: docId)));
+            }
+            else
+            {
+              error = "Total must be greater than \$0";
             }
           }
+          else
+          {
+            error = "All Debts must have a debtor defined.";
+          }
+        }
+        else
+        {
+          error = "One or more Debts must be defined.";
         }
       }
+      else
+      {
+        error = "Payer cannot be None";
+      }
+    }
+    else
+    {
+      error = "Transaction name cannot be empty.";
+    }
+
+    if (error != null && mounted)
+    {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
     }
   }
 
@@ -309,7 +339,9 @@ class _EditTransactionForm extends State<EditTransactionForm>
                   availableUserIds: parentTrip?.sharedWith ?? <String>[],
                   onSelectedUserChanged: (user)
                   { 
-                    _payer = user.id;
+                    setState(() {
+                      _payer = user?.id ?? "";
+                    });
                   },
                   label: "Payer",
                   initialUser: _payer 
@@ -372,6 +404,17 @@ class _EditTransactionForm extends State<EditTransactionForm>
                       enableNegative: false,
                       showZeroValue: true,
                       initDoubleValue: debt.amount);
+
+                    final userSelector = UserSelector(
+                      availableUserIds: parentTrip?.sharedWith ?? <String>[], 
+                      onSelectedUserChanged: (user) => 
+                        setState(() {
+                          debt.debtor = user?.id ?? "";
+                        }),
+                      label: "Debtor",
+                      initialUser: debt.debtor,
+                    );
+
                     return ListTile(
                       title: Column(
                         children: 
@@ -384,16 +427,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
                           Row(
                             children: [
                               Expanded(
-                                child: UserSelector(
-                                  availableUserIds: parentTrip?.sharedWith ?? <String>[], 
-                                  onSelectedUserChanged: (user) => 
-                                    setState(() {
-                                      debt.debtor = user.id;
-                                    }),
-                                  label: "Debtor",
-                                  initialUser: debt.debtor,
-                                  openDirection: OptionsViewOpenDirection.up,
-                                ),
+                                child: userSelector
                               ),
                               const SizedBox(width: 15,),
                               Expanded(

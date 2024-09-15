@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:syncowe/models/notification_token.dart';
 import 'package:syncowe/models/user.dart' as syncowe_user;
 
 class UserFirestoreService {
@@ -19,6 +20,12 @@ class UserFirestoreService {
   String currentUserId()
   {
     return _firebaseAuth.currentUser!.uid;
+  }
+
+  DocumentReference getUserDoc(String? id)
+  {
+    id ??= _firebaseAuth.currentUser!.uid;
+    return users.doc(id);
   }
 
   Future<syncowe_user.User?> getUser(String? id) async
@@ -60,5 +67,17 @@ class UserFirestoreService {
     final allUsers = snapshot.docs.map((doc) => doc.data() as syncowe_user.User);
 
     return allUsers.where((user) => user.id != _firebaseAuth.currentUser!.uid && !ignoreList.any((ignore) => ignore.id == user.id));
+  }
+
+  CollectionReference _notificationTokens(String? userId)
+  {
+    return getUserDoc(userId).collection("NotificationTokens").withConverter<NotificationToken>(
+      fromFirestore: NotificationToken.fromFirestore,  
+      toFirestore: (notificationToken, options) => notificationToken.toJson());
+  }
+
+  Future<void> addOrUpdateNotificationToken(NotificationToken token) async
+  {
+    await _notificationTokens(null).doc(token.token).set(token);
   }
 }

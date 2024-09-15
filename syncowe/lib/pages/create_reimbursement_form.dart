@@ -103,7 +103,7 @@ class _CreateReimbursementForm extends State<CreateReimbursementForm>
                     children: [
                       UserSelector(
                         availableUserIds: trip.sharedWith, 
-                        onSelectedUserChanged: (userId) => payTo = userId.id,
+                        onSelectedUserChanged: (userId) => payTo = userId?.id ?? "",
                         label: "Pay To",
                         initialUser: payTo,
                       ),
