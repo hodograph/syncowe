@@ -1,0 +1,2 @@
+# Delete My Account
+To delete your account, in the app or on syncowe.web.app, navigate to your account page and click delete. Confirm the deletion and all stored data of yours will be deleted along with your account.
