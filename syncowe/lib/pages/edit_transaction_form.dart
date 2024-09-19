@@ -202,7 +202,6 @@ class _EditTransactionForm extends State<EditTransactionForm>
   Future<void> submitTransaction() async
   {
     String? error;
-    // TODO: error logging.
     if(_nameController.text.isNotEmpty)
     {
       if(_payer != null)

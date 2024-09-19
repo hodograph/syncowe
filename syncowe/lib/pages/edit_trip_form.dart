@@ -84,6 +84,7 @@ class _EditTripForm extends State<EditTripForm>
           child: 
           SingleChildScrollView
           (
+            primary: false,
             child: Column
             (
               crossAxisAlignment: CrossAxisAlignment.start,

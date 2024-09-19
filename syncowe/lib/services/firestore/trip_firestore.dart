@@ -57,7 +57,7 @@ class TripFirestoreService
     }
   }
 
-  CollectionReference _transactions(String tripId)
+  CollectionReference transactions(String tripId)
   {
     return getTripDoc(tripId).collection("Transactions").withConverter<syncowe_transaction.Transaction>(
       fromFirestore: syncowe_transaction.Transaction.fromFirestore, 
@@ -66,7 +66,7 @@ class TripFirestoreService
 
   Stream<syncowe_transaction.Transaction?> listenToTransaction(String tripId, String id)
   {
-    return _transactions(tripId).doc(id).snapshots().map((snapshot) => snapshot.data() as syncowe_transaction.Transaction);
+    return transactions(tripId).doc(id).snapshots().map((snapshot) => snapshot.data() as syncowe_transaction.Transaction);
   }
 
   Future<syncowe_transaction.Transaction?> getTransaction(String tripId, String id) async
@@ -85,29 +85,29 @@ class TripFirestoreService
 
   DocumentReference getTransactionDoc(String tripId, String transactionId)
   {
-    return _transactions(tripId).doc(transactionId);
+    return transactions(tripId).doc(transactionId);
   }
 
   Stream<QuerySnapshot> listenToTransactions(String tripId)
   {
-    return _transactions(tripId).snapshots();
+    return transactions(tripId).snapshots();
   }
 
   Future<String> addOrUpdateTransaction(syncowe_transaction.Transaction transaction, String tripId, String? id) async
   {
     if (id == null)
     {
-      var doc = await _transactions(tripId).add(transaction);
+      var doc = await transactions(tripId).add(transaction);
       return doc.id;
     }
     else
     {
-      await _transactions(tripId).doc(id).set(transaction);
+      await transactions(tripId).doc(id).set(transaction);
       return id;
     }
   }
 
-  CollectionReference _reimbursements(String tripId)
+  CollectionReference reimbursements(String tripId)
   {
     return getTripDoc(tripId).collection("Reimbursements").withConverter<Reimbursement>(
       fromFirestore: Reimbursement.fromFirestore, 
@@ -118,17 +118,17 @@ class TripFirestoreService
   {
     if(id == null)
     {
-      await _reimbursements(tripId).add(reimbursement);
+      await reimbursements(tripId).add(reimbursement);
     }
     else
     {
-      await _reimbursements(tripId).doc(id).set(reimbursement);
+      await reimbursements(tripId).doc(id).set(reimbursement);
     }
   }
 
   Stream<QuerySnapshot> listenToReimbursements(String tripId)
   {
-    return _reimbursements(tripId).snapshots();
+    return reimbursements(tripId).snapshots();
   }
 
   CollectionReference _overallDebts(String tripId)

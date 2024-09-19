@@ -1,7 +1,7 @@
 import {onDocumentCreated, onDocumentCreatedWithAuthContext, onDocumentUpdatedWithAuthContext}
   from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
-import {DocumentReference, FieldValue, Timestamp}
+import {DocumentReference, FieldValue, initializeFirestore, Timestamp}
   from "firebase-admin/firestore";
 //import {defineSecret} from "firebase-functions/params";
 import {onCall} from "firebase-functions/v2/https";
@@ -14,7 +14,8 @@ import DocumentIntelligence,
 import {log}
   from "firebase-functions/logger";
 
-admin.initializeApp();
+const app = admin.initializeApp();
+const firestore = initializeFirestore(app, {preferRest: true});
 
 const tripsCollectionName = "Trips";
 const transactionsCollectionName = "Transactions";
@@ -129,7 +130,7 @@ exports.notificationCreated = onDocumentCreated(`/${usersCollectionName}` +
   `/{userId}/${notificationsCollectionName}/{notificationId}`,
 async (event) => 
 {
-  const tokensRef = admin.firestore().collection(usersCollectionName).doc(event.params.userId)
+  const tokensRef = firestore.collection(usersCollectionName).doc(event.params.userId)
     .collection(notificationTokensCollectionName).where(nameof<NotificationToken>("enabled"),
     "==",
     true);
@@ -218,14 +219,14 @@ async function updateOverallSummariesFromTransaction(
   tripId: string,
   transactionId: string,
   submittingUser: string | undefined) {
-  const tripDoc = admin.firestore()
+  const tripDoc = firestore
     .collection(tripsCollectionName).doc(tripId);
 
   newTransaction.calculatedDebts.forEach(async (calculatedDebt) => {
     if (calculatedDebt.debtor == calculatedDebt.owedTo) {
       if(calculatedDebt.owedTo != submittingUser)
       {
-        admin.firestore()
+        firestore
           .collection(usersCollectionName)
           .doc(calculatedDebt.owedTo)
           .collection(notificationsCollectionName)
@@ -289,7 +290,7 @@ async function updateOverallSummariesFromTransaction(
         newTransaction.createdDate!,
         false)));
 
-    admin.firestore()
+    firestore
       .collection(usersCollectionName)
       .doc(calculatedDebt.debtor)
       .collection(notificationsCollectionName)
@@ -309,7 +310,7 @@ async function updateOverallSummariesFromTransaction(
  * @param {string} transactionId linked transaction ID.
  */
 async function deleteOverallSummaries(tripId: string, transactionId: string) {
-  const tripDoc = admin.firestore()
+  const tripDoc = firestore
     .collection(tripsCollectionName).doc(tripId);
 
   // Clear existing data related to this transaction.
@@ -340,7 +341,7 @@ async function updateOverallSummariesFromReimbursement(
   tripId: string,
   reimbursementId: string,
   submittingUser: string | undefined) {
-  const tripDoc = admin.firestore()
+  const tripDoc = firestore
     .collection(tripsCollectionName).doc(tripId);
 
   let debtPair: DebtPair;
@@ -441,7 +442,7 @@ async function updateOverallSummariesFromReimbursement(
       });
     }
 
-    admin.firestore()
+    firestore
         .collection(usersCollectionName)
         .doc(newReimbursement.payer)
         .collection(notificationsCollectionName)
@@ -471,7 +472,7 @@ async function updateOverallSummariesFromReimbursement(
   {
     if(newReimbursement.payer != submittingUser)
     {
-      admin.firestore()
+      firestore
         .collection(usersCollectionName)
         .doc(newReimbursement.payer)
         .collection(notificationsCollectionName)
@@ -486,7 +487,7 @@ async function updateOverallSummariesFromReimbursement(
 
     if(newReimbursement.recipient != submittingUser)
     {
-      admin.firestore()
+      firestore
         .collection(usersCollectionName)
         .doc(newReimbursement.recipient)
         .collection(notificationsCollectionName)

@@ -1,12 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:nameof_annotation/nameof_annotation.dart';
 import 'package:syncowe/models/calculated_debt.dart';
 import 'package:syncowe/models/debt.dart';
 import 'package:syncowe/models/server_timestamp_converter.dart';
 import 'package:syncowe/models/split_type.dart';
+
 part 'transaction.g.dart';
+part 'transaction.nameof.dart';
 
 @JsonSerializable(anyMap: true, explicitToJson: true)
+@nameof
 class Transaction
 {
   final String transactionName;
