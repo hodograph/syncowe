@@ -1,4 +1,4 @@
-import {onDocumentCreated, onDocumentUpdated}
+import {onDocumentCreated, onDocumentCreatedWithAuthContext, onDocumentUpdatedWithAuthContext}
   from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import {DocumentReference, FieldValue, Timestamp}
@@ -11,8 +11,8 @@ import DocumentIntelligence,
   isUnexpected} from "@azure-rest/ai-document-intelligence";
 
 //All available logging functions
-// import {log}
-//   from "firebase-functions/logger";
+import {log}
+  from "firebase-functions/logger";
 
 admin.initializeApp();
 
@@ -22,8 +22,9 @@ const reimbursementsCollectionName = "Reimbursements";
 const overallDebtsCollectionName = "OverallDebts";
 const overallDebtSummaryCollectionName = "OverallDebtSummary";
 
-//const azureDocApiKey = defineSecret("AZURE_DOC_INTEL_API_KEY");
-//const azureDocApiEndpoint = defineSecret("AZURE_DOC_INTEL_ENDPOINT");
+const usersCollectionName = "Users";
+const notificationsCollectionName = "Notifications";
+const notificationTokensCollectionName = "NotificationTokens";
 
 exports.readReceipt = onCall({secrets: ["AZURE_DOC_INTEL_API_KEY", "AZURE_DOC_INTEL_ENDPOINT"]}, async (request) => {
   if (request.auth?.token != undefined) {
@@ -124,26 +125,60 @@ exports.readReceipt = onCall({secrets: ["AZURE_DOC_INTEL_API_KEY", "AZURE_DOC_IN
   return undefined;
 });
 
-exports.transactionCreated = onDocumentCreated(`/${tripsCollectionName}` +
+exports.notificationCreated = onDocumentCreated(`/${usersCollectionName}` +
+  `/{userId}/${notificationsCollectionName}/{notificationId}`,
+async (event) => 
+{
+  const tokensRef = admin.firestore().collection(usersCollectionName).doc(event.params.userId)
+    .collection(notificationTokensCollectionName).where(nameof<NotificationToken>("enabled"),
+    "==",
+    true);
+    
+  const tokens = await tokensRef.get();
+
+  const notification = event.data?.data() as Notification;
+
+  tokens.forEach((token) => 
+  {
+    const notificationToken = token.data() as NotificationToken;
+
+    const payload = {
+      data: {
+        notificationId: event.params.notificationId
+      },
+      notification: {
+        title: notification.title,
+        body: notification.message
+      },
+      token: notificationToken.token
+    }
+    
+    admin.messaging().send(payload)
+  });
+});
+
+exports.transactionCreated = onDocumentCreatedWithAuthContext(`/${tripsCollectionName}` +
   `/{tripId}/${transactionsCollectionName}/{transactionId}`,
 async (event) => {
   const newTransaction = event.data?.data() as Transaction;
 
   await updateOverallSummariesFromTransaction(newTransaction,
     event.params.tripId,
-    event.params.transactionId);
+    event.params.transactionId,
+    event.authId);
 });
 
-exports.reimbursementCreated = onDocumentCreated(`/${tripsCollectionName}` +
+exports.reimbursementCreated = onDocumentCreatedWithAuthContext(`/${tripsCollectionName}` +
   `/{tripId}/${reimbursementsCollectionName}/{reimbursementId}`,
 async (event) => {
   await updateOverallSummariesFromReimbursement(
     event.data?.data() as Reimbursement,
     event.params.tripId,
-    event.params.reimbursementId);
+    event.params.reimbursementId,
+    event.authId);
 });
 
-exports.transactionUpdated = onDocumentUpdated(`/${tripsCollectionName}` +
+exports.transactionUpdated = onDocumentUpdatedWithAuthContext(`/${tripsCollectionName}` +
   `/{tripId}/${transactionsCollectionName}/{transactionId}`,
 async (event) => {
   await deleteOverallSummaries(event.params.tripId,
@@ -153,10 +188,11 @@ async (event) => {
 
   await updateOverallSummariesFromTransaction(newTransaction,
     event.params.tripId,
-    event.params.transactionId);
+    event.params.transactionId,
+    event.authId);
 });
 
-exports.reimbursementUpdated = onDocumentUpdated(`/${tripsCollectionName}` +
+exports.reimbursementUpdated = onDocumentUpdatedWithAuthContext(`/${tripsCollectionName}` +
   `/{tripId}/${reimbursementsCollectionName}/{reimbursementId}`,
 async (event) => {
   await deleteOverallSummaries(event.params.tripId,
@@ -166,7 +202,8 @@ async (event) => {
 
   await updateOverallSummariesFromReimbursement(newReimbursement,
     event.params.tripId,
-    event.params.reimbursementId);
+    event.params.reimbursementId,
+    event.authId);
 });
 
 /**
@@ -174,16 +211,33 @@ async (event) => {
  * @param {Transaction} newTransaction The transaction to use.
  * @param {string} tripId ID of parent trip.
  * @param {string} transactionId ID of transaction.
+ * @param {string} submittingUser The user that submitted the update. Notifications will not be sent to them.
  */
 async function updateOverallSummariesFromTransaction(
   newTransaction : Transaction,
   tripId: string,
-  transactionId: string) {
+  transactionId: string,
+  submittingUser: string | undefined) {
   const tripDoc = admin.firestore()
     .collection(tripsCollectionName).doc(tripId);
 
   newTransaction.calculatedDebts.forEach(async (calculatedDebt) => {
     if (calculatedDebt.debtor == calculatedDebt.owedTo) {
+      if(calculatedDebt.owedTo != submittingUser)
+      {
+        admin.firestore()
+          .collection(usersCollectionName)
+          .doc(calculatedDebt.owedTo)
+          .collection(notificationsCollectionName)
+          .add(serializeFS(new Notification(
+            "Transaction Updated",
+            `You are owed \$${(newTransaction.total - calculatedDebt.amount).toFixed(2)} for ${newTransaction.transactionName}`,
+            tripId,
+            transactionId,
+            undefined
+          )));
+      }
+      
       return;
     }
 
@@ -232,7 +286,20 @@ async function updateOverallSummariesFromTransaction(
         transactionId,
         false,
         false,
-        newTransaction.createdDate!)));
+        newTransaction.createdDate!,
+        false)));
+
+    admin.firestore()
+      .collection(usersCollectionName)
+      .doc(calculatedDebt.debtor)
+      .collection(notificationsCollectionName)
+      .add(serializeFS(new Notification(
+        "Transaction Updated",
+        `You owe \$${calculatedDebt.amount.toFixed(2)} for ${newTransaction.transactionName}`,
+        tripId,
+        transactionId,
+        undefined
+      )));
   });
 }
 
@@ -266,11 +333,13 @@ async function deleteOverallSummaries(tripId: string, transactionId: string) {
  * @param {Transaction} newReimbursement The reimbursement to use.
  * @param {string} tripId ID of parent trip.
  * @param {string} reimbursementId ID of reimbursement.
+ * @param {string} submittingUser The user that submitted the reimbursement. Will not be sent notification.
  */
 async function updateOverallSummariesFromReimbursement(
   newReimbursement: Reimbursement,
   tripId: string,
-  reimbursementId: string) {
+  reimbursementId: string,
+  submittingUser: string | undefined) {
   const tripDoc = admin.firestore()
     .collection(tripsCollectionName).doc(tripId);
 
@@ -287,7 +356,8 @@ async function updateOverallSummariesFromReimbursement(
     newReimbursement.recipient).get();
 
   // if debt pair doesn't exist, check the reverse.
-  if (debtsRef.docs.length == 0) {
+  if (debtsRef.docs.length == 0) 
+  {
     debtsRef = await tripDoc.collection(overallDebtsCollectionName).where(
       nameof<DebtPair>("user1"),
       "==",
@@ -297,30 +367,138 @@ async function updateOverallSummariesFromReimbursement(
       newReimbursement.payer).get();
 
     // if debt pair still doesn't exist, create a debt pair.
-    if (debtsRef.docs.length == 0) {
+    if (debtsRef.docs.length == 0) 
+    {
       debtPair = new DebtPair(newReimbursement.payer,
         newReimbursement.recipient);
       debtPairRef = await tripDoc.collection(overallDebtsCollectionName)
         .add(serializeFS(debtPair));
-    } else {
+    } 
+    else 
+    {
       debtPair = debtsRef.docs[0].data() as DebtPair;
       debtPairRef = debtsRef.docs[0].ref;
     }
-  } else {
+  } 
+  else 
+  {
     debtPair = debtsRef.docs[0].data() as DebtPair;
     debtPairRef = debtsRef.docs[0].ref;
   }
+  let archive: boolean = false;
+
+  // Only check and archive debts if reimbursement is confirmed.
+  if(newReimbursement.confirmed)
+  {
+    const debtSummariesRef = await debtPairRef.collection(overallDebtSummaryCollectionName)
+      .where(nameof<OverallDebtSummary>("archived"), "==", false).get();
+
+    let totalOwed: number = 0;
+
+    debtSummariesRef.forEach((debtSummaryRef) =>
+    {
+      const debtSummary = debtSummaryRef.data() as OverallDebtSummary;
+
+      if(debtSummary.debtor == newReimbursement.payer)
+      {
+        if(debtSummary.isReimbursement)
+        {
+          totalOwed -= debtSummary.amount;
+        }
+        else
+        {
+          totalOwed += debtSummary.amount;
+        }
+      }
+      else
+      {
+        if(debtSummary.isReimbursement)
+        {
+          totalOwed += debtSummary.amount;
+        }
+        else 
+        {
+          totalOwed -= debtSummary.amount;
+        }
+      }
+    });
+    log(totalOwed);
+
+    totalOwed = parseFloat(totalOwed.toFixed(2));
+    log(totalOwed);
+    log(newReimbursement.amount);
+
+
+    archive = totalOwed == newReimbursement.amount;
+
+    if (archive)
+    {
+      const archiveParamUpdate: {[key:string]: any} = {};
+      archiveParamUpdate[nameof<OverallDebtSummary>("archived")] = true;
+      debtSummariesRef.forEach((debtSummaryRef) =>
+      {
+        debtSummaryRef.ref.update(archiveParamUpdate)
+      });
+    }
+
+    admin.firestore()
+        .collection(usersCollectionName)
+        .doc(newReimbursement.payer)
+        .collection(notificationsCollectionName)
+        .add(serializeFS(new Notification(
+          "Reimbursement Confirmed",
+          `Reimbursement confirmed for \$${newReimbursement.amount}`,
+          tripId,
+          undefined,
+          reimbursementId
+        )));
+  }
 
   debtPairRef.collection(overallDebtSummaryCollectionName)
-    .add(serializeFS(new OverallDebtSummary(
-      newReimbursement.payer,
-      newReimbursement.recipient,
-      newReimbursement.amount,
-      "Reimbursement",
-      reimbursementId,
-      true,
-      !newReimbursement.confirmed,
-      newReimbursement.createdDate)));
+      .add(serializeFS(new OverallDebtSummary(
+        newReimbursement.payer,
+        newReimbursement.recipient,
+        newReimbursement.amount,
+        "Reimbursement",
+        reimbursementId,
+        true,
+        !newReimbursement.confirmed,
+        newReimbursement.createdDate,
+        archive
+      )));
+
+  if(!newReimbursement.confirmed)
+  {
+    if(newReimbursement.payer != submittingUser)
+    {
+      admin.firestore()
+        .collection(usersCollectionName)
+        .doc(newReimbursement.payer)
+        .collection(notificationsCollectionName)
+        .add(serializeFS(new Notification(
+          "Reimbursement Updated",
+          `You paid ${newReimbursement.amount}`,
+          tripId,
+          undefined,
+          reimbursementId
+        )));
+    }
+
+    if(newReimbursement.recipient != submittingUser)
+    {
+      admin.firestore()
+        .collection(usersCollectionName)
+        .doc(newReimbursement.recipient)
+        .collection(notificationsCollectionName)
+        .add(serializeFS(new Notification(
+          "Reimbursement Updated",
+          `You were paid ${newReimbursement.amount}`,
+          tripId,
+          undefined,
+          reimbursementId
+        )));
+    }
+  }
 }
 
 const nameof = <T>(name: Extract<keyof T, string>): string => name;
@@ -387,6 +565,42 @@ class DebtPair {
   }
 }
 
+class Notification {
+  title: string;
+  message: string;
+  transactionId: string | undefined;
+  reimbursementId: string | undefined;
+  tripId: string;
+  timestamp: FieldValue;
+
+  public constructor(
+    title: string,
+    message: string,
+    tripId: string,
+    transactionId: string | undefined,
+    reimbursementId: string | undefined
+  )
+  {
+    this.title = title;
+    this.message = message;
+    this.tripId = tripId;
+    this.transactionId = transactionId;
+    this.reimbursementId = reimbursementId;
+    this.timestamp = FieldValue.serverTimestamp();
+  }
+}
+
+class NotificationToken {
+  token: string;
+  enabled: boolean;
+
+  public constructor(token: string, enabled: boolean)
+  {
+    this.token = token;
+    this.enabled = enabled;
+  }
+}
+
 /**
  * OverallDebtSummary model.
  */
@@ -399,6 +613,7 @@ class OverallDebtSummary {
   isReimbursement: boolean;
   isPending: boolean;
   createdDate: Timestamp;
+  archived: boolean;
 
   /**
    * @param {string} debtor who owed money.
@@ -418,7 +633,9 @@ class OverallDebtSummary {
     transactionId: string,
     isReimbursement: boolean,
     isPending: boolean,
-    createdDate: Timestamp) {
+    createdDate: Timestamp,
+    archived: boolean | undefined
+  ) {
     this.debtor = debtor;
     this.payer = payer;
     this.amount = amount;
@@ -427,6 +644,7 @@ class OverallDebtSummary {
     this.isReimbursement = isReimbursement;
     this.isPending = isPending;
     this.createdDate = createdDate;
+    this.archived = archived ?? false;
   }
 }
 
