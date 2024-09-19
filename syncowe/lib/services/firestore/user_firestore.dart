@@ -10,6 +10,12 @@ class UserFirestoreService {
     fromFirestore: syncowe_user.User.fromFirestore,
     toFirestore: (user, options) => (user).toJson());
 
+  Future<void> deleteAccount() async
+  {
+    users.doc(_firebaseAuth.currentUser!.uid).delete();
+    _firebaseAuth.currentUser!.delete();
+  }
+
   Future<void> addOrUpdateUser(syncowe_user.User user) async{
     // Only let user update themselves.
     if(_firebaseAuth.currentUser!.uid == user.id)
@@ -97,7 +103,7 @@ class UserFirestoreService {
   Future<Notification> getNotification(String notificationId) async
   {
     final snapshot = await _notifications(null).doc(notificationId).get();
-    
+
     return snapshot.data() as Notification;
   }
 

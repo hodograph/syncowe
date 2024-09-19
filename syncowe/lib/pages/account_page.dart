@@ -24,6 +24,37 @@ class _AccountPage extends State<AccountPage>
     authService.signOut();
   }
 
+  Future<void> confirmDelete() async
+  {
+    bool? confirmed = await showDialog<bool>
+    (
+      context: context,
+      builder: (context) => AlertDialog
+      (
+        title: const Text ("Delete account?"),
+        content: const Text("Are you sure you want to delete your account?"),
+        actions: 
+        [
+          TextButton
+          (
+            onPressed: () => Navigator.of(context).pop(false), 
+            child: const Text("Cancel")
+          ),
+          TextButton
+          (
+            onPressed: () => Navigator.of(context).pop(true), 
+            child: const Text("Confirm")
+          ),
+        ],
+      )
+    );
+
+    if(confirmed == true)
+    {
+      _userFirestoreService.deleteAccount();
+    }
+  }
+
   void updateName(User user)
   {
     final displayNameController = TextEditingController(text: user.displayName);
@@ -132,7 +163,11 @@ class _AccountPage extends State<AccountPage>
                     FilledButton(
                       onPressed: onPressed, 
                       child: const Text("Log Out")
-                    )
+                    ),
+                    const SizedBox(height: 25,),
+                    FilledButton.icon(onPressed: _userFirestoreService.deleteAccount, 
+                      label: const Text("Delete Account"),
+                      icon: const Icon(Icons.delete_forever),)
                   ],
                 )
               )
