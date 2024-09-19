@@ -12,8 +12,8 @@ class UserFirestoreService {
 
   Future<void> deleteAccount() async
   {
-    users.doc(_firebaseAuth.currentUser!.uid).delete();
-    _firebaseAuth.currentUser!.delete();
+    await users.doc(_firebaseAuth.currentUser!.uid).delete();
+    await _firebaseAuth.currentUser!.delete();
   }
 
   Future<void> addOrUpdateUser(syncowe_user.User user) async{

@@ -43,7 +43,7 @@ class _AccountPage extends State<AccountPage>
           TextButton
           (
             onPressed: () => Navigator.of(context).pop(true), 
-            child: const Text("Confirm")
+            child: const Text("Yes")
           ),
         ],
       )
@@ -51,7 +51,7 @@ class _AccountPage extends State<AccountPage>
 
     if(confirmed == true)
     {
-      _userFirestoreService.deleteAccount();
+      await _userFirestoreService.deleteAccount();
     }
   }
 
