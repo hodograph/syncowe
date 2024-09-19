@@ -1,6 +1,7 @@
 import 'package:currency_textfield/currency_textfield.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:syncowe/models/calculated_debt_summary_entry.dart';
 import 'package:syncowe/models/transaction.dart';
 import 'package:syncowe/models/user.dart';
@@ -107,7 +108,7 @@ class _TransactionSummaryPage extends State<TransactionSummaryPage>
                 ],
               ),
               body: StreamBuilder(
-                stream: _userFirestoreService.listToUsers(userIds), 
+                stream: _userFirestoreService.listenToUsers(userIds), 
                 builder: (context, snapshot)
                 {
                   if (snapshot.hasError)
@@ -135,6 +136,8 @@ class _TransactionSummaryPage extends State<TransactionSummaryPage>
                       counter++;
                     }
 
+                    DateTime createdDate = transaction.createdDate as DateTime;
+
                     return Column(
                       children: [
                         Expanded(
@@ -142,6 +145,12 @@ class _TransactionSummaryPage extends State<TransactionSummaryPage>
                           child: PieChart(PieChartData(sections: data)),
                         ),
                         const SizedBox(height: 15,),
+
+                        Center( child: Text("Total: \$${transaction.total}")),
+                        Center( child: Text("Paid by: ${users[transaction.payer]!.getDisplayString()}")),
+                        Center( child: Text("Date submitted: ${DateFormat.yMMMd().format(createdDate)}")),
+
+                        const Divider(),
                         Expanded( 
                           flex: 8,
                           child: ListView.builder(

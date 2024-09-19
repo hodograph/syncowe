@@ -145,13 +145,15 @@ class TripFirestoreService
 
   CollectionReference _overallDebtSummary(String tripId, String debtPairId)
   {
-    return _overallDebts(tripId).doc(debtPairId).collection("OverallDebtSummary").withConverter<OverallDebtSummary>(
-      fromFirestore: OverallDebtSummary.fromFirestore, 
-      toFirestore: (summary, options) => summary.toJson());
+    return _overallDebts(tripId).doc(debtPairId).collection("OverallDebtSummary")
+      .withConverter<OverallDebtSummary>(
+        fromFirestore: OverallDebtSummary.fromFirestore,
+        toFirestore: (summary, options) => summary.toJson());
   }
 
-  Stream<QuerySnapshot> listenToOverallDebtSummary(String tripId, String debtPairId)
+  Stream<QuerySnapshot> listenToOverallDebtSummary(String tripId, String debtPairId, {bool archived = false})
   {
-    return _overallDebtSummary(tripId, debtPairId).snapshots();
+    return _overallDebtSummary(tripId, debtPairId)
+      .where(NameofOverallDebtSummary.fieldArchived, isEqualTo: archived).snapshots();
   }
 }

@@ -19,7 +19,10 @@ abstract class NameofUser {
   static const String fieldId = 'id';
   static const String fieldPicture = 'picture';
 
+  static const String propertyGetHashCode = 'hashCode';
+
   static const String functionMatches = 'matches';
   static const String functionToJson = 'toJson';
   static const String functionGetDisplayString = 'getDisplayString';
+  static const String function = '';
 }

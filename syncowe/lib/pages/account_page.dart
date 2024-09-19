@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:syncowe/models/notification_token.dart';
 import 'package:syncowe/models/user.dart';
 import 'package:syncowe/services/auth/auth_service.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
+import 'package:syncowe/services/notifications/notification_service.dart';
 
 class AccountPage extends StatefulWidget
 {
@@ -15,6 +17,13 @@ class AccountPage extends StatefulWidget
 class _AccountPage extends State<AccountPage>
 {
   final UserFirestoreService _userFirestoreService = UserFirestoreService();
+  bool notificationEnabled = false;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
 
   void onPressed()
   {
@@ -55,6 +64,9 @@ class _AccountPage extends State<AccountPage>
   Widget build(BuildContext context) {
     
     final currentUser = Provider.of<User?>(context);
+    final notificationService = Provider.of<NotificationService>(context);
+    final notificationToken = notificationService.notificationToken;
+    notificationEnabled = notificationToken?.enabled ?? false;
 
     return Scaffold(
       body: SafeArea(
@@ -88,6 +100,35 @@ class _AccountPage extends State<AccountPage>
                         onPressed: () => updateName(currentUser!), 
                         icon: const Icon(Icons.edit)
                       )
+                    ],
+                  ),
+
+                  const SizedBox(height: 25,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Notifications: "),
+                      SegmentedButton(
+                        segments: const [
+                          ButtonSegment<bool>(value: false, label: Text("Off")),
+                          ButtonSegment<bool>(value: true, label: Text("On"))
+                        ], 
+                        selected: <bool>{notificationEnabled},
+                        onSelectionChanged: (Set<bool> newSelection) 
+                        {
+                          if(!newSelection.first)
+                          {
+                            notificationEnabled = newSelection.first;
+                            notificationToken!.enabled = newSelection.first;
+                            _userFirestoreService.addOrUpdateNotificationToken(notificationToken);
+                          }
+                          else
+                          {
+                            notificationService.getNotificationToken();
+                          }
+                          setState(() {});
+                        },
+                      ),
                     ],
                   ),
 

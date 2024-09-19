@@ -16,6 +16,7 @@ OverallDebtSummary _$OverallDebtSummaryFromJson(Map<String, dynamic> json) =>
       isReimbursement: json['isReimbursement'] as bool,
       isPending: json['isPending'] as bool,
       createdDate: ServerTimestampConverter.fromJson(json['createdDate']),
+      archived: json['archived'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$OverallDebtSummaryToJson(OverallDebtSummary instance) =>
@@ -27,5 +28,6 @@ Map<String, dynamic> _$OverallDebtSummaryToJson(OverallDebtSummary instance) =>
       'transactionId': instance.transactionId,
       'isReimbursement': instance.isReimbursement,
       'isPending': instance.isPending,
+      'archived': instance.archived,
       'createdDate': ServerTimestampConverter.toJson(instance.createdDate),
     };

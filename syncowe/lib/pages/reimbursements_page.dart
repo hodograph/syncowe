@@ -57,7 +57,7 @@ class _ReimbursementsPage extends State<ReimbursementsPage>
 
           return StreamBuilder
           (
-            stream: _userFirestoreService.listToUsers(Provider.of<Trip?>(context)?.sharedWith ?? []), 
+            stream: _userFirestoreService.listenToUsers(Provider.of<Trip?>(context)?.sharedWith ?? []), 
             builder: (context, snapshot)
             {
               if (snapshot.hasError) 
@@ -81,7 +81,7 @@ class _ReimbursementsPage extends State<ReimbursementsPage>
                   itemCount: reimbursements.length,
                   itemBuilder: (context, index) 
                   {
-                    final reimbursement = reimbursements[index] as Reimbursement;
+                    final reimbursement = reimbursements[index].data() as Reimbursement;
                     Widget? trailing;
 
                     if (reimbursement.recipient == _userFirestoreService.currentUserId() && !reimbursement.confirmed)

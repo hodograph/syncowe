@@ -47,7 +47,7 @@ class _TripOverviewPage extends State<TripOverviewPage>
 
           return StreamBuilder
           (
-            stream: _userFirestoreService.listToUsers(trip.sharedWith),
+            stream: _userFirestoreService.listenToUsers(trip.sharedWith),
             builder: (context, snapshot)
             {
               if (snapshot.hasError) 

@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:nameof_annotation/nameof_annotation.dart';
 import 'package:syncowe/models/server_timestamp_converter.dart';
 
 part 'overall_debt_summary.g.dart';
+part 'overall_debt_summary.nameof.dart';
 
 @JsonSerializable()
+@nameof
 class OverallDebtSummary
 {
   final String debtor;
@@ -14,6 +17,7 @@ class OverallDebtSummary
   final String transactionId;
   final bool isReimbursement;
   final bool isPending;
+  final bool archived;
 
   @JsonKey(
     toJson: ServerTimestampConverter.toJson,
@@ -28,7 +32,8 @@ class OverallDebtSummary
     required this.transactionId, 
     required this.isReimbursement,
     required this.isPending,
-    this.createdDate});
+    this.createdDate,
+    this.archived = false});
 
   factory OverallDebtSummary.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? options) => OverallDebtSummary.fromJson(snapshot.data()!);
 

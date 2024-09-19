@@ -6,9 +6,9 @@ part 'notification_token.g.dart';
 class NotificationToken
 {
   final String token;
-  final bool enabled;
+  bool enabled;
 
-  const NotificationToken({required this.token, required this.enabled});
+  NotificationToken({required this.token, required this.enabled});
 
   factory NotificationToken.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? options) => NotificationToken.fromJson(snapshot.data()!);
 

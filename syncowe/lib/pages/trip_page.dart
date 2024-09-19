@@ -5,6 +5,7 @@ import 'package:syncowe/models/trip.dart';
 import 'package:syncowe/pages/create_reimbursement_form.dart';
 import 'package:syncowe/pages/edit_transaction_form.dart';
 import 'package:syncowe/pages/edit_trip_form.dart';
+import 'package:syncowe/pages/reimbursements_page.dart';
 import 'package:syncowe/pages/transactions_page.dart';
 import 'package:syncowe/pages/trip_overview_page.dart';
 import 'package:syncowe/services/firestore/trip_firestore.dart';
@@ -88,7 +89,7 @@ class _TripPage extends State<TripPage>
               children: [
                 TripOverviewPage(tripId: _tripId),
                 TransactionsPage(tripId: _tripId),
-                const Center(child: Text("There are no reimbursements"),)
+                ReimbursementsPage(tripId: _tripId)
               ],
             ),
             floatingActionButton: SpeedDial(

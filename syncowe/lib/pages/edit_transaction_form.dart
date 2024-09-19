@@ -416,53 +416,48 @@ class _EditTransactionForm extends State<EditTransactionForm>
                     );
 
                     return ListTile(
-                      title: Column(
-                        children: 
-                        [
-                          TextField(
-                            controller: memoController,
-                            onChanged: (value) => debt.memo = value,
-                            decoration: const InputDecoration(label: Text("Memo")),
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: userSelector
-                              ),
-                              const SizedBox(width: 15,),
-                              Expanded(
-                                child: TextField(
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  controller: amountController,
-                                  onChanged: (value) => debt.amount = amountController.doubleValue,
-                                  decoration: const InputDecoration(label: Text("Amount")),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              children: [
+                                TextField(
+                                  controller: memoController,
+                                  onChanged: (value) => debt.memo = value,
+                                  decoration: const InputDecoration(label: Text("Memo")),
                                 ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: userSelector
+                                    ),
+                                    const SizedBox(width: 15,),
+                                    Expanded(
+                                      child: TextField(
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        controller: amountController,
+                                        onChanged: (value) => debt.amount = amountController.doubleValue,
+                                        decoration: const InputDecoration(label: Text("Amount")),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              IconButton(
+                                onPressed: () => setState(() => _debts.removeAt(index)),
+                                icon: const Icon(Icons.delete),
                               ),
-                            ],
-                          ),
-                        ]
-                      ),
-                      trailing: Wrap(
-                        children: 
-                        [
-                          IconButton(
-                            onPressed: () => setState(() => _debts.removeAt(index)),
-                            icon: const Icon(Icons.delete),
-                          ),
-                          IconButton(
-                            onPressed: () => splitDebt(debt),
-                            icon: const Icon(Icons.call_split_rounded),
-                          )
-                              // IconButton
-                              // (
-                              //   onPressed: () => setState(() => _debts.removeAt(index)),
-                              //   icon: const Icon(Icons.delete),
-                              //   padding: const EdgeInsets.all(0),
-                              //   constraints: const BoxConstraints(),
-                              // ),
-                              
-
-                        ]
+                              IconButton(
+                                onPressed: () => splitDebt(debt),
+                                icon: const Icon(Icons.call_split_rounded),
+                              )
+                          ],)
+                        ],
                       )
                     );
                   }
