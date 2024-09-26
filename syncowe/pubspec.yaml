@@ -82,7 +82,7 @@ flutter_launcher_icons:
   image_path_android: "assets/SyncOweIcon.png"
   image_path_ios: "assets/SyncOweIcon.png"
   android: true
-  iso: true
+  ios: true
   web:
     generate: true
     image_path: "assets/SyncOweIcon.png"
