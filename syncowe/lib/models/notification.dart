@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:nameof_annotation/nameof_annotation.dart';
 import 'package:syncowe/models/server_timestamp_converter.dart';
 
 part 'notification.g.dart';
+part 'notification.nameof.dart';
 
 @JsonSerializable()
+@nameof
 class Notification
 {
   final String title;
@@ -17,7 +20,7 @@ class Notification
     toJson: ServerTimestampConverter.toJson,
     fromJson: ServerTimestampConverter.fromJson
   )
-  final Object? createdDate;
+  final Object? timestamp;
 
   Notification({
     required this.title,
@@ -25,7 +28,7 @@ class Notification
     required this.tripId,
     this.transactionId,
     this.reimbursementId,
-    this.createdDate
+    this.timestamp
     });
 
   factory Notification.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot, SnapshotOptions? options) => Notification.fromJson(snapshot.data()!);

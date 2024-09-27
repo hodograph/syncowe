@@ -391,9 +391,14 @@ class _EditTransactionForm extends State<EditTransactionForm>
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _debts.length,
+                  itemCount: _debts.length + 1,
                   itemBuilder: (context, index)
                   {
+                    if(index == _debts.length)
+                    {
+                      return const SizedBox(height: 75,);
+                    }
+
                     Debt debt = _debts[index];
 
                     final memoController = TextEditingController(text: debt.memo);

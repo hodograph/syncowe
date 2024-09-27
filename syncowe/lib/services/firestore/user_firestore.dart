@@ -88,7 +88,7 @@ class UserFirestoreService {
     await _notificationTokens(null).doc(token.token).set(token);
   }
 
-  CollectionReference _notifications(String? userId)
+  CollectionReference notifications(String? userId)
   {
     return getUserDoc(userId).collection("Notifications").withConverter<Notification>(
       fromFirestore: Notification.fromFirestore,  
@@ -97,12 +97,12 @@ class UserFirestoreService {
 
   Stream<QuerySnapshot> listenToNotifications()
   {
-    return _notifications(null).snapshots();
+    return notifications(null).snapshots();
   }
 
   Future<Notification> getNotification(String notificationId) async
   {
-    final snapshot = await _notifications(null).doc(notificationId).get();
+    final snapshot = await notifications(null).doc(notificationId).get();
 
     return snapshot.data() as Notification;
   }

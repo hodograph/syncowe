@@ -26,6 +26,8 @@ class _ReimbursementsPage extends State<ReimbursementsPage>
   @override
   Widget build(BuildContext context) {
     return FirestorePagination(
+      padding: const EdgeInsets.only(bottom: 75),
+      isLive: true,
       viewType: ViewType.list,
       query: _tripFirestoreService.reimbursements(widget.tripId).orderBy(NameofReimbursement.fieldCreatedDate, descending: true), 
       itemBuilder: (context, snapshots, index)

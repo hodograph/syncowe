@@ -59,7 +59,7 @@ exports.readReceipt = onCall({secrets: ["AZURE_DOC_INTEL_API_KEY", "AZURE_DOC_IN
     if (document) {
       if (document.fields != undefined) {
         let total: number = 0;
-        const transactionName = document.fields["MerchantName"].valueString;
+        const transactionName = document.fields["MerchantName"]?.valueString;
         const totalField = document.fields["Total"];
 
         // If total failed to be extracted, attempt to create it from subtotal, tip, and tax.
@@ -91,19 +91,15 @@ exports.readReceipt = onCall({secrets: ["AZURE_DOC_INTEL_API_KEY", "AZURE_DOC_IN
         const debts: Debt[] = [];
 
         document.fields["Items"].valueArray?.forEach((item) => {
-          if (item.valueObject != undefined) {
-            const itemQuantity = item.valueObject["Quantity"];
+          if (item?.valueObject != undefined) {
+            const amount = item.valueObject["Quantity"]?.valueNumber ?? 1;
 
-            if (itemQuantity.valueNumber != undefined) {
-              const amount = itemQuantity.valueNumber;
-              for (let i = 0; i < amount; i++) {
-                const memo = item.valueObject["Description"].valueString;
-                const itemPrice = (item.valueObject["TotalPrice"].valueCurrency?.amount ?? 0) / amount;
+            for (let i = 0; i < amount; i++) {
+              const memo = item.valueObject["Description"].valueString;
+              const itemPrice = (item.valueObject["TotalPrice"].valueCurrency?.amount ?? 0) / amount;
 
-                if (itemPrice != undefined) {
-                  debts.push(new Debt(itemPrice, "", memo ?? ""));
-                }
-                
+              if (itemPrice != undefined) {
+                debts.push(new Debt(itemPrice, "", memo ?? ""));
               }
             }
           }

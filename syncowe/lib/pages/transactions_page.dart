@@ -46,6 +46,8 @@ class _TransactionPage extends State<TransactionsPage>
   @override
   Widget build(BuildContext context) {
     return FirestorePagination(
+      isLive: true,
+      padding: const EdgeInsets.only(bottom: 75),
       viewType: ViewType.list,
       query: _tripFirestoreService.transactions(widget.tripId).orderBy(NameofTransaction.fieldCreatedDate, descending: true), 
       itemBuilder: (context, snapshot, index)

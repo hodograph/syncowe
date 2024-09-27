@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:syncowe/firebase_options.dart';
 import 'package:syncowe/services/auth/auth_gate.dart';
@@ -23,6 +24,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      shortcuts: {
+        LogicalKeySet(LogicalKeyboardKey.space): const ActivateIntent(),
+      },
       title: 'SyncOwe',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green, brightness: Brightness.light),

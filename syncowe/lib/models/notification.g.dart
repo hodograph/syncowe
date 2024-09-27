@@ -12,7 +12,7 @@ Notification _$NotificationFromJson(Map<String, dynamic> json) => Notification(
       tripId: json['tripId'] as String,
       transactionId: json['transactionId'] as String?,
       reimbursementId: json['reimbursementId'] as String?,
-      createdDate: ServerTimestampConverter.fromJson(json['createdDate']),
+      timestamp: ServerTimestampConverter.fromJson(json['timestamp']),
     );
 
 Map<String, dynamic> _$NotificationToJson(Notification instance) =>
@@ -22,5 +22,5 @@ Map<String, dynamic> _$NotificationToJson(Notification instance) =>
       'transactionId': instance.transactionId,
       'reimbursementId': instance.reimbursementId,
       'tripId': instance.tripId,
-      'createdDate': ServerTimestampConverter.toJson(instance.createdDate),
+      'timestamp': ServerTimestampConverter.toJson(instance.timestamp),
     };
