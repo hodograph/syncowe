@@ -6,6 +6,7 @@ import 'package:currency_textfield/currency_textfield.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:syncowe/components/multi_user_selector.dart';
 import 'package:syncowe/components/spin_edit.dart';
 import 'package:syncowe/components/user_selector.dart';
 import 'package:syncowe/models/calculated_debt.dart';
@@ -49,6 +50,55 @@ class _EditTransactionForm extends State<EditTransactionForm>
 
   SplitType _splitType = SplitType.evenSplit;
   String? _payer;
+
+  Future<void> addDebt() async
+  {
+    if(_splitType == SplitType.evenSplit)
+    {
+      List<String>? userDebtsToAdd = await showDialog<List<String>?>
+      (
+        context: context, 
+        builder: (context)
+        {
+          List<String> selectedUsers = parentTrip!.sharedWith;
+          return AlertDialog
+          (
+            title: const Text("Add Debtors"),
+            content: SizedBox( width: double.maxFinite, child: MultiUserSelector
+            (
+              users: parentTrip!.sharedWith,
+              usersChanged: (value) => selectedUsers = value
+            )),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(selectedUsers),
+                child: const Text("Add")
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(null),
+                child: const Text("Cancel")
+              )
+            ],
+          );
+        }
+      );
+
+      if (userDebtsToAdd != null)
+      {
+        setState(() {
+          for (String userId in userDebtsToAdd){
+            _debts.add(Debt(debtor: userId, memo: "", amount: 0));
+          }
+        });
+      }
+    }
+    else
+    {
+      setState(() {
+        _debts.add(Debt(debtor: "", memo: "", amount: 0));
+      });
+    }
+  }
 
   void splitDebt(Debt debt) async
   {
@@ -366,7 +416,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
                       });
                     }
                   },
-                  decoration: const InputDecoration(label: Text("Split Type")),
+                  decoration: const InputDecoration(label: Text("Remainder Split Method")),
                 ),
                 
                 const SizedBox(height: 15,),
@@ -377,12 +427,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
                   [
                     const Text("Debts"),
                     OutlinedButton.icon(
-                      onPressed: ()
-                      {
-                        setState(() {
-                          _debts.add(Debt(debtor: "", memo: "", amount: 0));
-                        });
-                      }, 
+                      onPressed: addDebt, 
                       label: const Text("Add Debt"), 
                       icon: const Icon(Icons.add),
                     )

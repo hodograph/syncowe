@@ -24,6 +24,7 @@ class _NotificationsPage extends State<NotificationsPage>
       body: Center
       (
         child: FirestorePagination(
+          limit: 15,
           isLive: true,
           viewType: ViewType.list,
           query: _userFirestoreService.notifications(null).orderBy(NameofNotification.fieldTimestamp, descending: true),

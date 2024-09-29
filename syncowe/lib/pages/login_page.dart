@@ -19,7 +19,7 @@ class _LoginPageState extends State<LoginPage>
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
     
-  void signIn() async
+  Future<void> signIn() async
   {
     final authService = Provider.of<AuthService>(context, listen: false);
 
@@ -36,13 +36,30 @@ class _LoginPageState extends State<LoginPage>
     }
   }
 
-  void signInWithGoogle() async
+  Future<void> signInWithGoogle() async
   {
     final authService = Provider.of<AuthService>(context, listen: false);
 
     try
     {
       await authService.signInWithGoogle();
+    }
+    catch(e)
+    {
+      if(mounted)
+      {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  Future<void> signInWithApple() async
+  {
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    try
+    {
+      await authService.signInWithApple();
     }
     catch(e)
     {
@@ -123,6 +140,12 @@ class _LoginPageState extends State<LoginPage>
                   SignInButton(
                     Theme.of(context).brightness == Brightness.light ? Buttons.Google : Buttons.GoogleDark,
                     onPressed: signInWithGoogle
+                  ),
+                  const SizedBox(height: 25,),
+                  SignInButton(
+                    Theme.of(context).brightness == Brightness.light ? Buttons.Apple : Buttons.AppleDark,
+                    onPressed: signInWithApple,
+                    
                   )
                 ],
               ),

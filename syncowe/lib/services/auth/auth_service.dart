@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
 import 'package:syncowe/models/user.dart' as syncowe_user;
 
@@ -61,6 +63,54 @@ class AuthService extends ChangeNotifier{
     );
 
     final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+
+    if( await _userFirestoreService.getUser(userCredential.user!.uid) == null)
+    {
+      _userFirestoreService.addOrUpdateUser(
+        syncowe_user.User(
+          displayName: userCredential.user!.displayName, 
+          email: userCredential.user!.email!, 
+          id: userCredential.user!.uid, 
+          picture: userCredential.user!.photoURL)
+      );
+    }
+
+    return userCredential;
+  }
+
+  Future<UserCredential> signInWithApple() async
+  {
+    UserCredential userCredential;
+
+    if (kIsWeb)
+    {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        webAuthenticationOptions: WebAuthenticationOptions(
+          clientId: "SyncOwe", 
+          redirectUri: Uri.parse("${Uri.base}__/auth/handler")
+        )
+      );
+
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: credential.identityToken,
+        accessToken: credential.authorizationCode
+      );
+
+      userCredential = await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+    }
+    else
+    {
+      final provider = AppleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('name');
+
+      userCredential = await FirebaseAuth.instance.signInWithProvider(provider);
+    }
+    
 
     if( await _userFirestoreService.getUser(userCredential.user!.uid) == null)
     {

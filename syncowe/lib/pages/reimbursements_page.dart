@@ -26,6 +26,7 @@ class _ReimbursementsPage extends State<ReimbursementsPage>
   @override
   Widget build(BuildContext context) {
     return FirestorePagination(
+      limit: 15,
       padding: const EdgeInsets.only(bottom: 75),
       isLive: true,
       viewType: ViewType.list,

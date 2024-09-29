@@ -46,6 +46,7 @@ class _TransactionPage extends State<TransactionsPage>
   @override
   Widget build(BuildContext context) {
     return FirestorePagination(
+      limit: 15,
       isLive: true,
       padding: const EdgeInsets.only(bottom: 75),
       viewType: ViewType.list,
