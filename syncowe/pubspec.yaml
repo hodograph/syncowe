@@ -84,6 +84,7 @@ flutter_launcher_icons:
   image_path_android: "assets/SyncOweIcon.png"
   image_path_ios: "assets/SyncOweIconBackground.png"
   image_path_ios_dark_transparent: "assets/SyncOweIcon.png"
+  remove_alpha_ios: true
   android: true
   ios: true
   web:
