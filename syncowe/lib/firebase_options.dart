@@ -66,7 +66,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'syncowe.appspot.com',
     androidClientId: '134068539303-hsd51mq42b4mjg8moj3oa4dt75dl2qip.apps.googleusercontent.com',
     iosClientId: '134068539303-97p55nbommdmgclnusi4iekjfc9pn0sa.apps.googleusercontent.com',
-    iosBundleId: 'com.example.syncowe',
+    iosBundleId: 'com.syncowe.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -77,7 +77,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'syncowe.appspot.com',
     androidClientId: '134068539303-hsd51mq42b4mjg8moj3oa4dt75dl2qip.apps.googleusercontent.com',
     iosClientId: '134068539303-97p55nbommdmgclnusi4iekjfc9pn0sa.apps.googleusercontent.com',
-    iosBundleId: 'com.example.syncowe',
+    iosBundleId: 'com.syncowe.app',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
