@@ -1,25 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncowe/models/trip.dart';
 import 'package:syncowe/pages/edit_trip_form.dart';
 import 'package:syncowe/pages/trip_page.dart';
-import 'package:syncowe/services/firestore/trip_firestore.dart';
+import 'package:syncowe/services/firestore/current_trip.dart';
 
-class TripsPage extends StatefulWidget
+class TripsPage extends ConsumerStatefulWidget
 {
   const TripsPage({super.key});
 
   @override
-  State<TripsPage> createState() => _TripsPage();
+  ConsumerState<TripsPage> createState() => _TripsPage();
 }
 
-class _TripsPage extends State<TripsPage>
+class _TripsPage extends ConsumerState<TripsPage>
 {
   final isDialOpen = ValueNotifier(false);
 
-  final _tripsFirestoreService = TripFirestoreService();
 
   @override
   Widget build(BuildContext context) {
+    Future(() => ref.read(currentTripIdProvider.notifier).setTrip(null));
+
+    final Map<String, Trip> trips = ref.watch(tripsProvider);
+
     return DefaultTabController(
       length: 2, 
       child: Scaffold(
@@ -27,56 +31,29 @@ class _TripsPage extends State<TripsPage>
           title: const Text("SyncOwe"),
           centerTitle: true,
         ),
-        body: StreamBuilder(
-          stream: _tripsFirestoreService.listenToTrips(), 
-          builder: (context, snapshot)
+        body: ListView.builder
+        (
+          itemCount: ref.watch(tripsProvider).length,
+          itemBuilder: (context, index) 
           {
-            if (snapshot.hasError) 
-            {
-              return Center(
-                child: Text('Error: ${snapshot.error}'),
-              );
-            }
-            else if (!snapshot.hasData) 
-            {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-            else
-            {
-              final trips = snapshot.data!.docs.where((doc) => doc.data() is Trip).toList();
-
-              if (trips.isEmpty)
-              {
-                return const Center(
-                  child: Text("You are not part of any active Trips."),
+            final String tripId = trips.entries.toList()[index].key;
+            final trip = trips[tripId]!;
+            return ListTile(
+              title: Center(child: Text(trip.name)),
+              onTap: () {
+                ref.read(currentTripIdProvider.notifier).setTrip(tripId);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const TripPage())
                 );
-              }
-
-              return ListView.builder(
-                itemCount: trips.length,
-                itemBuilder: (context, index) 
-                {
-                  final trip = trips[index].data() as Trip;
-                  return ListTile(
-                    title: Center(child: Text(trip.name)),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => TripPage(tripId: trips[index].id))
-                      );
-                    },
-                  );
-                }
-              );
-            }
+              },
+            );
           }
         ),
         floatingActionButton: FilledButton.icon(
           label: const Text("Create trip"),
           icon: const Icon(Icons.add),
           onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const EditTripForm(tripId: null))),
+                MaterialPageRoute(builder: (context) => const EditTripForm())),
         )
       )
     );

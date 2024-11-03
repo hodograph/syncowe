@@ -2,22 +2,32 @@ import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Notification;
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:syncowe/models/notification_token.dart';
 import 'package:syncowe/pages/transaction_summary_page.dart';
 import 'package:syncowe/pages/trip_page.dart';
+import 'package:syncowe/services/firestore/current_transaction.dart';
+import 'package:syncowe/services/firestore/current_trip.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
 import 'package:syncowe/models/notification.dart';
 
-class NotificationService extends ChangeNotifier
+part 'notification_service.g.dart';
+
+@riverpod
+class NotificationService extends _$NotificationService
 {
   final _userFirestoreService = UserFirestoreService();
 
-  String? _currentToken;
-
-  NotificationToken? notificationToken;
-
-  Future<NotificationToken?> getNotificationToken() async
+  @override
+  NotificationToken? build()
   {
+    return null;
+  }
+
+  Future<void> getNotificationToken() async
+  {
+    String? currentToken = state?.token;
+
     final notificationSettings = await FirebaseMessaging.instance.requestPermission(
       alert: true,
       announcement: false,
@@ -39,7 +49,7 @@ class NotificationService extends ChangeNotifier
       final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
       if (apnsToken == null)
       {
-        return null;
+        return;
       }
     }
 
@@ -47,35 +57,30 @@ class NotificationService extends ChangeNotifier
 
     if(fcmToken != null)
     {
-      _currentToken = fcmToken;
+      currentToken = fcmToken;
 
-      notificationToken = NotificationToken(
-        token: _currentToken!, 
+      state = NotificationToken(
+        token: currentToken, 
         enabled: notificationSettings.authorizationStatus == AuthorizationStatus.authorized
       );
 
-      _userFirestoreService.addOrUpdateNotificationToken(notificationToken!);
-
-      notifyListeners();
+      _userFirestoreService.addOrUpdateNotificationToken(state!);
     }
 
     FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken)
     {
-      if(_currentToken != fcmToken)
+      if(currentToken != fcmToken)
       {
-        _currentToken = fcmToken;
+        currentToken = fcmToken;
 
-        notificationToken = NotificationToken(
-          token: _currentToken!, 
+        state = NotificationToken(
+          token: currentToken!, 
           enabled: notificationSettings.authorizationStatus == AuthorizationStatus.authorized
         );
 
-        _userFirestoreService.addOrUpdateNotificationToken(notificationToken!);
-        notifyListeners();
+        _userFirestoreService.addOrUpdateNotificationToken(state!);
       }
     });
-
-    return notificationToken;
   }
 
   Future<void> initNotificationListening(BuildContext context) async
@@ -100,16 +105,18 @@ class NotificationService extends ChangeNotifier
 
     if(context.mounted)
     {
+      ref.read(currentTripIdProvider.notifier).setTrip(notification.tripId);
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => TripPage(tripId: notification.tripId))
+        MaterialPageRoute(builder: (context) => const TripPage())
       );
 
+      ref.read(currentTransactionIdProvider.notifier).setTransactionId(notification.transactionId);
       if (notification.transactionId != null)
       {
         Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => 
-            TransactionSummaryPage(tripId: notification.tripId, transactionId: notification.transactionId!,
-          ))
+            const TransactionSummaryPage(),
+          )
         );
       }
     }

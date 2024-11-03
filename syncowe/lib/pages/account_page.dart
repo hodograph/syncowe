@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncowe/models/user.dart';
 import 'package:syncowe/services/auth/auth_service.dart';
+import 'package:syncowe/services/auth/current_user.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
 import 'package:syncowe/services/notifications/notification_service.dart';
 
-class AccountPage extends StatefulWidget
+class AccountPage extends ConsumerStatefulWidget
 {
   const AccountPage({super.key});
 
   @override
-  State<AccountPage> createState() => _AccountPage();
+  ConsumerState<AccountPage> createState() => _AccountPage();
 }
 
-class _AccountPage extends State<AccountPage>
+class _AccountPage extends ConsumerState<AccountPage>
 {
   final UserFirestoreService _userFirestoreService = UserFirestoreService();
   bool notificationEnabled = false;
 
   void onPressed()
   {
-    final authService = Provider.of<AuthService>(context, listen: false);
+    final authService = ref.read(authServiceProvider.notifier);
     authService.signOut();
   }
 
@@ -85,11 +86,12 @@ class _AccountPage extends State<AccountPage>
 
 
   @override
-  Widget build(BuildContext context) {
-    
-    final currentUser = Provider.of<User?>(context);
-    final notificationService = Provider.of<NotificationService>(context);
-    final notificationToken = notificationService.notificationToken;
+  Widget build(BuildContext context) 
+  {
+    User? currentUser = ref.watch(currentUserProvider);
+
+    final notificationService = ref.read(notificationServiceProvider.notifier);
+    final notificationToken = ref.watch(notificationServiceProvider);
     notificationEnabled = notificationToken?.enabled ?? false;
 
     return Scaffold(
@@ -121,7 +123,7 @@ class _AccountPage extends State<AccountPage>
                           disabledColor: Colors.transparent,
                           enableFeedback: false,
                         ),
-                        Text(currentUser?.displayName ?? currentUser?.email ?? "Unknown"),
+                        Text(currentUser?.getDisplayString() ?? "Unknown"),
                         IconButton
                         (
                           onPressed: () => updateName(currentUser!), 

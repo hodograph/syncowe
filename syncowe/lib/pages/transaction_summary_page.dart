@@ -1,32 +1,27 @@
 import 'package:currency_textfield/currency_textfield.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:syncowe/models/calculated_debt_summary_entry.dart';
 import 'package:syncowe/models/transaction.dart';
 import 'package:syncowe/models/user.dart';
 import 'package:syncowe/pages/edit_transaction_form.dart';
+import 'package:syncowe/services/firestore/current_transaction.dart';
+import 'package:syncowe/services/firestore/current_trip.dart';
 import 'package:syncowe/services/firestore/trip_firestore.dart';
-import 'package:syncowe/services/firestore/user_firestore.dart';
 
-class TransactionSummaryPage extends StatefulWidget
+class TransactionSummaryPage extends ConsumerStatefulWidget
 {
-  final String tripId;
-  final String transactionId;
 
-  const TransactionSummaryPage({super.key, required this.tripId, required this.transactionId});
+  const TransactionSummaryPage({super.key});
 
   @override
-  State<StatefulWidget> createState() => _TransactionSummaryPage();
+  ConsumerState<TransactionSummaryPage> createState() => _TransactionSummaryPage();
 }
 
-class _TransactionSummaryPage extends State<TransactionSummaryPage>
+class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage>
 {
-  late final String _tripId;
-  late final String _transactionId;
-
-  final TripFirestoreService _tripFirestoreService = TripFirestoreService();
-  final UserFirestoreService _userFirestoreService = UserFirestoreService();
 
   final List<Color> colorArray = const [
     Color(0xFFFF6633), Color(0xFFFFB399), Color(0xFFFF33FF),
@@ -48,13 +43,6 @@ class _TransactionSummaryPage extends State<TransactionSummaryPage>
     Color(0xFF99E6E6), Color(0xFF6666FF)
   ];
 
-  @override
-  void initState() {
-    _tripId = widget.tripId;
-    _transactionId = widget.transactionId;
-    super.initState();
-  }
-
   TextField createCurrencyTextField(double amount)
   {
     return TextField(
@@ -69,133 +57,142 @@ class _TransactionSummaryPage extends State<TransactionSummaryPage>
         border: InputBorder.none),
     );
   }
+
+  Future<void> deleteTransaction() async
+  {
+    var tripFirestoreService = ref.read(tripFirestoreServiceProvider.notifier);
+    String? tripId = ref.watch(currentTripIdProvider);
+    String? transactionId = ref.watch(currentTransactionIdProvider);
+    Transaction? currentTransaction = ref.watch(currentTransactionProvider);
+
+    bool? delete = await showDialog<bool>
+    (
+      context: context,
+      builder: (context) => AlertDialog
+      (
+        title: const Text ("Delete Transaction"),
+        content: Text("Are you sure you want to delete ${currentTransaction?.transactionName}?"),
+        actions: 
+        [
+          TextButton
+          (
+            onPressed: () => Navigator.of(context).pop(false), 
+            child: const Text("No")
+          ),
+          TextButton
+          (
+            onPressed: () => Navigator.of(context).pop(true), 
+            child: const Text("Yes")
+          ),
+        ],
+      ),
+    );
+
+    if(delete == true && tripId != null && transactionId != null && mounted)
+    {
+      tripFirestoreService.deleteTransaction(tripId, transactionId);
+      Navigator.of(context).pop();
+      ref.read(currentTransactionIdProvider.notifier).setTransactionId(null);
+    }
+  }
   
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
-      stream: _tripFirestoreService.listenToTransaction(_tripId, _transactionId),
-      builder: (context, snapshot)
-      {
-        if (snapshot.hasError)
-        {
-          return Center(child: Text("${snapshot.error!}"));
-        }
-        else if(!snapshot.hasData)
-        {
-          return const Center(child: CircularProgressIndicator(),);
-        }
-        else
-        {
-          Transaction transaction = snapshot.data!;
-          List<String> userIds = transaction.calculatedDebts.map((x) => x.debtor).toList();
 
-          Map<String, List<CalculatedDebtSummaryEntry>> debtSummaries = 
-          { for(var calculatedDebt in transaction.calculatedDebts) calculatedDebt.debtor : calculatedDebt.summary };
-          
-          Map<String, double> debts = 
-          { for (var calculatedDebt in transaction.calculatedDebts) calculatedDebt.debtor : calculatedDebt.amount };
+    Transaction? currentTransaction = ref.watch(currentTransactionProvider);
+    Map<String, User> users = ref.watch(tripUsersProvider);
+    
+    List<String> userIds = currentTransaction!.calculatedDebts.map((x) => x.debtor).toList();
 
-          return SafeArea(
-            child: Scaffold(
-              appBar: AppBar(
-                title: Text(transaction.transactionName),
-                centerTitle: true,
-                actions: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => EditTransactionForm(tripId: _tripId, transactionId: _transactionId,))), 
-                    icon: const Icon(Icons.edit))
-                ],
-              ),
-              body: StreamBuilder(
-                stream: _userFirestoreService.listenToUsers(userIds), 
-                builder: (context, snapshot)
+    Map<String, List<CalculatedDebtSummaryEntry>> debtSummaries = 
+      { for(var calculatedDebt in currentTransaction.calculatedDebts) calculatedDebt.debtor : calculatedDebt.summary };
+    
+    Map<String, double> debts = 
+      { for (var calculatedDebt in currentTransaction.calculatedDebts) calculatedDebt.debtor : calculatedDebt.amount };
+
+    List<PieChartSectionData> data = <PieChartSectionData>[];
+    int counter = 0;
+
+    for(MapEntry<String, double> debt in debts.entries)
+    {
+      data.add(PieChartSectionData(
+        value: debt.value,
+        color: colorArray[counter % colorArray.length],
+        showTitle: false
+      ));
+      counter++;
+    }
+
+    DateTime createdDate = currentTransaction.createdDate as DateTime;
+
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(currentTransaction.transactionName),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              onPressed: deleteTransaction,
+              icon: const Icon(Icons.delete_forever)
+            ),
+            IconButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const EditTransactionForm())), 
+              icon: const Icon(Icons.edit))
+          ],
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              flex: 2,
+              child: PieChart(PieChartData(sections: data)),
+            ),
+            const SizedBox(height: 15,),
+
+            Center( child: Text("Total: \$${currentTransaction.total.toStringAsFixed(2)}")),
+            Center( child: Text("Paid by: ${users[currentTransaction.payer]!.getDisplayString()}")),
+            Center( child: Text("Date submitted: ${DateFormat.yMMMd().format(createdDate)}")),
+
+            const Divider(),
+            Expanded( 
+              flex: 8,
+              child: ListView.builder(
+                itemCount: debts.length,
+                shrinkWrap: true,
+                itemBuilder: (context, index)
                 {
-                  if (snapshot.hasError)
+                  String user = userIds[index];
+                  List<Widget> summaryWidgets = [];
+
+                  for(CalculatedDebtSummaryEntry debtSummaryEntry in debtSummaries[user]!)
                   {
-                    return Center(child: Text("${snapshot.error!}"));
-                  }
-                  else if(!snapshot.hasData)
-                  {
-                    return const Center(child: CircularProgressIndicator(),);
-                  }
-                  else
-                  {
-                    Map<String, User> users = { for (var doc in snapshot.data!.docs) doc.id : doc.data() as User };
-
-                    List<PieChartSectionData> data = <PieChartSectionData>[];
-                    int counter = 0;
-
-                    for(MapEntry<String, double> debt in debts.entries)
-                    {
-                      data.add(PieChartSectionData(
-                        value: debt.value,
-                        color: colorArray[counter % colorArray.length],
-                        showTitle: false
-                      ));
-                      counter++;
-                    }
-
-                    DateTime createdDate = transaction.createdDate as DateTime;
-
-                    return Column(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: PieChart(PieChartData(sections: data)),
-                        ),
-                        const SizedBox(height: 15,),
-
-                        Center( child: Text("Total: \$${transaction.total}")),
-                        Center( child: Text("Paid by: ${users[transaction.payer]!.getDisplayString()}")),
-                        Center( child: Text("Date submitted: ${DateFormat.yMMMd().format(createdDate)}")),
-
-                        const Divider(),
-                        Expanded( 
-                          flex: 8,
-                          child: ListView.builder(
-                            itemCount: debts.length,
-                            shrinkWrap: true,
-                            itemBuilder: (context, index)
-                            {
-                              String user = userIds[index];
-                              List<Widget> summaryWidgets = [];
-
-                              for(CalculatedDebtSummaryEntry debtSummaryEntry in debtSummaries[user]!)
-                              {
-                                summaryWidgets.add(
-                                  ListTile(
-                                    title: Text(debtSummaryEntry.memo),
-                                    subtitle: createCurrencyTextField(debtSummaryEntry.amount)
-                                  )
-                                );
-                              }
-
-                              return ExpansionTile(
-                                title: Text(users[user]!.displayName ?? users[user]!.email),
-                                subtitle: createCurrencyTextField(debts[user]!),
-                                leading: Container(
-                                  width: 16, 
-                                  height: 16,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.rectangle,
-                                    color: colorArray[index % colorArray.length]
-                                  ),
-                                ),
-                                children: summaryWidgets,
-                              );
-                            }
-                          )
-                        )
-                      ],
+                    summaryWidgets.add(
+                      ListTile(
+                        title: Text(debtSummaryEntry.memo),
+                        subtitle: createCurrencyTextField(debtSummaryEntry.amount)
+                      )
                     );
                   }
+
+                  return ExpansionTile(
+                    title: Text(users[user]!.displayName ?? users[user]!.email),
+                    subtitle: createCurrencyTextField(debts[user]!),
+                    leading: Container(
+                      width: 16, 
+                      height: 16,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.rectangle,
+                        color: colorArray[index % colorArray.length]
+                      ),
+                    ),
+                    children: summaryWidgets,
+                  );
                 }
               )
             )
-          );
-        }
-      }
+          ],
+        )
+      )
     );
   }
 }

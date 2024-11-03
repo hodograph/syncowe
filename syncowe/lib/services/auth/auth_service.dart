@@ -1,12 +1,18 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
 import 'package:syncowe/models/user.dart' as syncowe_user;
+part 'auth_service.g.dart';
 
-class AuthService extends ChangeNotifier{
+@riverpod
+class AuthService extends _$AuthService{
+
+  @override
+  Object? build() => AuthService();
+
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final UserFirestoreService _userFirestoreService = UserFirestoreService();
 

@@ -1,11 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:currency_textfield/currency_textfield.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncowe/components/multi_user_selector.dart';
 import 'package:syncowe/components/spin_edit.dart';
 import 'package:syncowe/components/user_selector.dart';
@@ -14,27 +13,23 @@ import 'package:syncowe/models/calculated_debt_summary_entry.dart';
 import 'package:syncowe/models/debt.dart';
 import 'package:syncowe/models/split_type.dart';
 import 'package:syncowe/models/transaction.dart';
-import 'package:syncowe/models/trip.dart';
 import 'package:syncowe/pages/transaction_summary_page.dart';
+import 'package:syncowe/services/firestore/current_transaction.dart';
+import 'package:syncowe/services/firestore/current_trip.dart';
 import 'package:syncowe/services/firestore/trip_firestore.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
 
-class EditTransactionForm extends StatefulWidget
+class EditTransactionForm extends ConsumerStatefulWidget
 {
-  final String tripId;
-  final String? transactionId;
-  const EditTransactionForm({super.key, required this.tripId, this.transactionId});
+  const EditTransactionForm({super.key});
 
   @override
-  State<StatefulWidget> createState() => _EditTransactionForm();
+  ConsumerState<EditTransactionForm> createState() => _EditTransactionForm();
 }
 
-class _EditTransactionForm extends State<EditTransactionForm>
+class _EditTransactionForm extends ConsumerState<EditTransactionForm>
 {
   final TripFirestoreService _tripFirestoreService = TripFirestoreService();
-
-  Transaction? _transactionToEdit;
-  Trip? parentTrip;
 
   final TextEditingController _nameController = TextEditingController();
 
@@ -55,18 +50,18 @@ class _EditTransactionForm extends State<EditTransactionForm>
   {
     if(_splitType == SplitType.evenSplit)
     {
+      var tripUsers = ref.watch(tripUsersProvider).entries.map((x) => x.key).toList();
       List<String>? userDebtsToAdd = await showDialog<List<String>?>
       (
         context: context, 
         builder: (context)
         {
-          List<String> selectedUsers = parentTrip!.sharedWith;
+          List<String> selectedUsers = tripUsers;
           return AlertDialog
           (
             title: const Text("Add Debtors"),
             content: SizedBox( width: double.maxFinite, child: MultiUserSelector
             (
-              users: parentTrip!.sharedWith,
               usersChanged: (value) => selectedUsers = value
             )),
             actions: [
@@ -155,27 +150,27 @@ class _EditTransactionForm extends State<EditTransactionForm>
   }
 
   @override
-  void initState() {
+  void didChangeDependencies() {
     initTransactionData();
-    super.initState();
+    super.didChangeDependencies();
   }
 
   Future<void> initTransactionData() async
   {
-    if (widget.transactionId != null)
+    Transaction? currentTransaction = ref.watch(currentTransactionProvider);
+    if (currentTransaction != null)
     {
-      _transactionToEdit = await _tripFirestoreService.getTransaction(widget.tripId, widget.transactionId!);
-      _nameController.text = _transactionToEdit!.transactionName;
-      _payer = _transactionToEdit!.payer;
+      _nameController.text = currentTransaction.transactionName;
+      _payer = currentTransaction.payer;
       _totalAmountController = CurrencyTextFieldController(currencySymbol: '\$',
         thousandSymbol: ',',
         decimalSymbol: '.',
         enableNegative: false,
         showZeroValue: true,
-        initDoubleValue: _transactionToEdit!.total);
-      _splitType = _transactionToEdit!.splitType;
+        initDoubleValue: currentTransaction.total);
+      _splitType = currentTransaction.splitType;
 
-      var debts = _transactionToEdit!.debts;
+      var debts = currentTransaction.debts;
       for (Debt debt in debts)
       {
         _debts.add(debt);
@@ -186,13 +181,12 @@ class _EditTransactionForm extends State<EditTransactionForm>
       _payer = UserFirestoreService().currentUserId();
     }
 
-    Trip? trip = await _tripFirestoreService.getTrip(widget.tripId);
     setState(() {
-      parentTrip = trip;
+      
     });
   }
 
-  void calculateDebts(Transaction transaction)
+  bool calculateDebts(Transaction transaction)
   {
     for (Debt debt in transaction.debts)
     {
@@ -247,10 +241,27 @@ class _EditTransactionForm extends State<EditTransactionForm>
       payerDebt.amount += remainder;
       payerDebt.summary.add(CalculatedDebtSummaryEntry(memo: "Remainder", amount: remainder));
     }
+
+    if(transaction.calculatedDebts.any((x) => x.amount.isNaN))
+    {
+      if(mounted)
+      {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error calculating debts. Calculation resulted in a non-numeric result.")));
+      }
+      return false;
+    }
+    else
+    {
+      return true;
+    }
   }
 
   Future<void> submitTransaction() async
   {
+    Transaction? transactionToEdit = ref.watch(currentTransactionProvider);
+    String? currentTripId = ref.watch(currentTripIdProvider);
+    String? currentTransactionId = ref.watch(currentTransactionIdProvider);
+
     String? error;
     if(_nameController.text.isNotEmpty)
     {
@@ -268,23 +279,29 @@ class _EditTransactionForm extends State<EditTransactionForm>
                 total: _totalAmountController.doubleValue,
                 splitType: _splitType,
                 debts: _debts,
-                createdDate: widget.transactionId == null ? null : _transactionToEdit!.createdDate);
+                createdDate: transactionToEdit?.createdDate);
 
-              calculateDebts(transaction);
-
-              String docId = await _tripFirestoreService.addOrUpdateTransaction(transaction, widget.tripId, widget.transactionId);
-
-              if (mounted)
+              if (calculateDebts(transaction))
               {
-                // If this is editing a transaction, go up one page before pushing replacement.
-                // Pushing replacement forces a refresh of the summary page.
-                if(widget.transactionId != null)
+                String docId = await _tripFirestoreService.addOrUpdateTransaction(transaction, currentTripId!, currentTransactionId);
+
+                if (mounted)
                 {
-                  Navigator.of(context).pop();
+                  // If this is editing a transaction, go up one page before pushing replacement.
+                  // Pushing replacement forces a refresh of the summary page.
+                  if(currentTransactionId != null)
+                  {
+                    Navigator.of(context).pop();
+                  }
+                  // If this is a new transaction, set the transaction ID.
+                  else
+                  {
+                    ref.read(currentTransactionIdProvider.notifier).setTransactionId(docId);
+                  }
+                  
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const TransactionSummaryPage()));
                 }
-                
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => TransactionSummaryPage(tripId: widget.tripId, transactionId: docId)));
               }
             }
             else
@@ -334,7 +351,7 @@ class _EditTransactionForm extends State<EditTransactionForm>
         final transaction = Transaction.fromJson(callResult.data);
         _nameController.text = transaction.transactionName;
         _splitType = transaction.splitType;
-        _totalAmountController.text = transaction.total.toString();
+        _totalAmountController.text = transaction.total.toStringAsFixed(2); 
 
         _debts.clear();
         _debts.addAll(transaction.debts);
@@ -356,11 +373,13 @@ class _EditTransactionForm extends State<EditTransactionForm>
 
   @override
   Widget build(BuildContext context) {
+    String? transactionId = ref.watch(currentTransactionIdProvider);
+
     return SafeArea
     (
       child: Scaffold(
         appBar: AppBar(
-          title: Text("${widget.transactionId == null ? "Create" : "Edit"} Transaction"),
+          title: Text("${transactionId == null ? "Create" : "Edit"} Transaction"),
           centerTitle: true,
           actions: [
             Padding(
@@ -385,7 +404,6 @@ class _EditTransactionForm extends State<EditTransactionForm>
                 ),
                 const SizedBox(height: 15,),
                 UserSelector(
-                  availableUserIds: parentTrip?.sharedWith ?? <String>[],
                   onSelectedUserChanged: (user)
                   { 
                     setState(() {
@@ -455,7 +473,6 @@ class _EditTransactionForm extends State<EditTransactionForm>
                       initDoubleValue: debt.amount);
 
                     final userSelector = UserSelector(
-                      availableUserIds: parentTrip?.sharedWith ?? <String>[], 
                       onSelectedUserChanged: (user) => 
                         setState(() {
                           debt.debtor = user?.id ?? "";

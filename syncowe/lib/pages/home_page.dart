@@ -1,53 +1,49 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:syncowe/models/notification_token.dart';
-import 'package:syncowe/models/user.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncowe/pages/account_page.dart';
 import 'package:syncowe/pages/notifications_page.dart';
 import 'package:syncowe/pages/trips_page.dart';
-import 'package:syncowe/services/firestore/user_firestore.dart';
+import 'package:syncowe/services/auth/current_user.dart';
+import 'package:syncowe/services/firestore/current_transaction.dart';
+import 'package:syncowe/services/firestore/current_trip.dart';
 import 'package:syncowe/services/notifications/notification_service.dart';
 
-class HomePage extends StatefulWidget{
+class HomePage extends ConsumerStatefulWidget{
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
+class _HomePageState extends ConsumerState<HomePage>
 {
-  final _userFirestoreService = UserFirestoreService();
-  final _notificationService = NotificationService();
-
-  NotificationToken? _initialToken;
-
   int currentPageIndex = 1;
-  User? _initialUserData;
 
   @override
   void initState()
   {
     initUserData();
-    _notificationService.initNotificationListening(context);
     super.initState();
   }
 
   Future<void> initUserData() async
   {
-    _initialUserData = await _userFirestoreService.getUser(null);
-    _initialToken = await _notificationService.getNotificationToken();
+    NotificationService notificationService = ref.read(notificationServiceProvider.notifier);
+    notificationService.initNotificationListening(context);
+    await notificationService.getNotificationToken();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        StreamProvider.value(value: _userFirestoreService.listenToUser(null), initialData: _initialUserData,),
-        ChangeNotifierProvider.value(value: _notificationService)
-      ],
-      child: Scaffold(
+    // Watch all default state providers so they are initialized here.
+    ref.watch(currentTripIdProvider);
+    ref.watch(currentTransactionIdProvider);
+    ref.watch(loadedTransactionsProvider);
+    ref.watch(currentTransactionProvider);
+    ref.watch(currentTransactionAsyncProvider);
+    ref.watch(currentUserProvider);
+
+    return Scaffold(
       bottomNavigationBar: NavigationBar(onDestinationSelected: (int index) {
         setState(() {
           currentPageIndex = index;
@@ -64,7 +60,6 @@ class _HomePageState extends State<HomePage>
         const TripsPage(),
         const AccountPage()
       ][currentPageIndex]
-      )
     );
   }
 }

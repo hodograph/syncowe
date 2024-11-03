@@ -1,20 +1,14 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncowe/firebase_options.dart';
 import 'package:syncowe/services/auth/auth_gate.dart';
-import 'package:syncowe/services/auth/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => AuthService(),
-      child: const MyApp(),
-    )
-  );
+  runApp(const ProviderScope(child: MyApp()),);
 }
 
 class MyApp extends StatelessWidget {

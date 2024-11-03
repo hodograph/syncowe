@@ -1,18 +1,19 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_signin_button/button_list.dart';
 import 'package:flutter_signin_button/button_view.dart';
 import 'package:syncowe/services/auth/auth_service.dart';
-import 'package:provider/provider.dart';
 
-class LoginPage extends StatefulWidget{
+class LoginPage extends ConsumerStatefulWidget{
   final void Function()? onTap;
   const LoginPage({super.key, required this.onTap});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage>
+class _LoginPageState extends ConsumerState<LoginPage>
 {
 
   // text controllers
@@ -21,7 +22,7 @@ class _LoginPageState extends State<LoginPage>
     
   Future<void> signIn() async
   {
-    final authService = Provider.of<AuthService>(context, listen: false);
+    final authService = ref.read(authServiceProvider.notifier);
 
     try
     {
@@ -38,7 +39,7 @@ class _LoginPageState extends State<LoginPage>
 
   Future<void> signInWithGoogle() async
   {
-    final authService = Provider.of<AuthService>(context, listen: false);
+    final authService = ref.read(authServiceProvider.notifier);
 
     try
     {
@@ -55,7 +56,7 @@ class _LoginPageState extends State<LoginPage>
 
   Future<void> signInWithApple() async
   {
-    final authService = Provider.of<AuthService>(context, listen: false);
+    final authService = ref.read(authServiceProvider.notifier);
 
     try
     {
@@ -82,6 +83,12 @@ class _LoginPageState extends State<LoginPage>
               padding: const EdgeInsets.symmetric(horizontal: 25.0),
               child: Column(
                 children: [
+                  FilledButton(onPressed: ()
+                  {
+                    FirebaseFunctions.instance.useFunctionsEmulator("localhost", 5001);
+                    FirebaseFunctions.instance.httpsCallable("migrateDocumentIds");
+                  }, 
+                  child: Text("Run Migration")),
                   // Login Icon
                   const Icon(Icons.login,
                     size: 80),

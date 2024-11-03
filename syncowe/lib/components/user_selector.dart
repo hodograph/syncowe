@@ -1,52 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncowe/models/user.dart';
+import 'package:syncowe/services/firestore/current_trip.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
 
-class UserSelector extends StatefulWidget
+class UserSelector extends ConsumerStatefulWidget
 {
-  final List<String> availableUserIds;
   final ValueChanged<User?> onSelectedUserChanged;
   final String? initialUser;
   final String label;
 
-  const UserSelector({super.key, 
-    required this.availableUserIds, 
+  const UserSelector({super.key,
     required this.onSelectedUserChanged, 
     required this.label, 
     this.initialUser});
 
   @override
-  State<StatefulWidget> createState() => _UserSelector();
+  ConsumerState<UserSelector> createState() => _UserSelector();
 }
 
-class _UserSelector extends State<UserSelector>
+class _UserSelector extends ConsumerState<UserSelector>
 {
   final UserFirestoreService _userFirestoreService = UserFirestoreService();
   User? selectedUser;
   final User _noneUser = User(displayName: "None", id: "", email: "None", picture: null);
-  List<User> availableUsers = <User>[];
 
-  bool _usersInitialized = false;
   bool _userInitialized = false;
 
   Future<void> initUserData() async
   {
     bool updated = false;
-    if (widget.availableUserIds.any((id) => !availableUsers.any((user) => user.id == id)))
-    {
-      availableUsers.clear();
-      availableUsers.add(_noneUser);
-      for(String id in widget.availableUserIds)
-      {
-        User? user = await _userFirestoreService.getUser(id);
-        if (user != null && !availableUsers.any((x) => x.id == user.id))
-        {
-          availableUsers.add(user);
-        }
-      }
-      _usersInitialized = true;
-      updated = true;
-    }
 
     if (widget.initialUser?.isNotEmpty ?? false)
     {
@@ -67,7 +50,7 @@ class _UserSelector extends State<UserSelector>
       updated = true;
     }
 
-    if(updated && _usersInitialized && _userInitialized)
+    if(updated && _userInitialized)
     {
       setState(() {
         
@@ -77,6 +60,10 @@ class _UserSelector extends State<UserSelector>
 
   @override
   Widget build(BuildContext context) {
+
+    List<User> availableUsers = [_noneUser];
+    
+    availableUsers.addAll(ref.watch(tripUsersProvider).entries.map((x) => x.value));
 
     initUserData();
     

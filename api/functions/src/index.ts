@@ -1,10 +1,10 @@
-import {onDocumentCreated, onDocumentCreatedWithAuthContext, onDocumentUpdatedWithAuthContext}
+import {onDocumentCreated, onDocumentCreatedWithAuthContext, onDocumentDeleted, onDocumentUpdatedWithAuthContext}
   from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import {DocumentReference, FieldValue, initializeFirestore, Timestamp}
   from "firebase-admin/firestore";
 //import {defineSecret} from "firebase-functions/params";
-import {onCall} from "firebase-functions/v2/https";
+import {onCall, onRequest} from "firebase-functions/v2/https";
 import DocumentIntelligence,
 {AnalyzeResultOperationOutput,
   getLongRunningPoller,
@@ -203,6 +203,53 @@ async (event) => {
     event.authId);
 });
 
+exports.transactionDeleted = onDocumentDeleted(`/${tripsCollectionName}` +
+  `/{tripId}/${transactionsCollectionName}/{transactionId}`,
+async (event) => {
+  await deleteOverallSummaries(event.params.tripId,
+    event.params.transactionId);
+});
+
+exports.migrateDocumentIds = onRequest({timeoutSeconds: 540},async (req, res) =>
+{
+  var trips = await firestore.collection(tripsCollectionName).get()
+  trips.docs.forEach(async (tripDoc) =>
+  {
+    var debtPairs = await tripDoc.ref.collection(overallDebtsCollectionName).get();
+    
+    debtPairs.docs.forEach(async (debtPairDoc) => 
+    {
+      var debtPair = debtPairDoc.data() as DebtPair;
+      let debtPairId = "";
+
+      if(debtPair.user1 < debtPair.user2)
+      {
+        debtPairId = debtPair.user1 + debtPair.user2;
+      }
+      else
+      {
+        debtPairId = debtPair.user2 + debtPair.user1;
+      }
+
+      var newDebtPairDoc = tripDoc.ref.collection(overallDebtsCollectionName).doc(debtPairId)
+      await newDebtPairDoc.set(debtPair);
+
+      var debtSummaries = await debtPairDoc.ref.collection(overallDebtSummaryCollectionName).get();
+
+      debtSummaries.docs.forEach(async (debtSummaryDoc) => 
+      {
+        var debtSummary = debtSummaryDoc.data() as OverallDebtSummary;
+        await newDebtPairDoc.collection(overallDebtSummaryCollectionName).doc(debtSummary.transactionId).set(debtSummary);
+        await debtSummaryDoc.ref.delete();
+      });
+
+      await debtPairDoc.ref.delete();
+    });
+  });
+
+  res.status(200).end();
+});
+
 /**
  * adds summaries based on transaction.
  * @param {Transaction} newTransaction The transaction to use.
@@ -241,6 +288,17 @@ async function updateOverallSummariesFromTransaction(
     let debtPair: DebtPair;
     let debtPairRef: DocumentReference;
 
+    let debtPairId = "";
+
+    if(calculatedDebt.owedTo < calculatedDebt.debtor)
+    {
+      debtPairId = calculatedDebt.owedTo + calculatedDebt.debtor;
+    }
+    else
+    {
+      debtPairId = calculatedDebt.debtor + calculatedDebt.owedTo;
+    }
+
     // get debt pair where payer and debtor are tracked.
     let debtsRef = await tripDoc.collection(overallDebtsCollectionName).where(
       nameof<DebtPair>("user1"),
@@ -274,7 +332,7 @@ async function updateOverallSummariesFromTransaction(
       debtPairRef = debtsRef.docs[0].ref;
     }
 
-    debtPairRef.collection(overallDebtSummaryCollectionName).add(
+    debtPairRef.collection(overallDebtSummaryCollectionName).doc(debtPairId).set(
       serializeFS(new OverallDebtSummary(
         calculatedDebt.debtor,
         calculatedDebt.owedTo,

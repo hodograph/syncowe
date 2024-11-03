@@ -1,15 +1,21 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:syncowe/models/debt_pair.dart';
 import 'package:syncowe/models/overall_debt_summary.dart';
 import 'package:syncowe/models/reimbursement.dart';
 import 'package:syncowe/models/trip.dart';
 import 'package:syncowe/models/transaction.dart' as syncowe_transaction;
 
-class TripFirestoreService
+part 'trip_firestore.g.dart';
+
+@riverpod
+class TripFirestoreService extends _$TripFirestoreService
 {
+  @override
+  TripFirestoreService build() => TripFirestoreService();
+
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   final CollectionReference _trips = FirebaseFirestore.instance.collection("Trips").withConverter<Trip>(
@@ -105,6 +111,11 @@ class TripFirestoreService
       await transactions(tripId).doc(id).set(transaction);
       return id;
     }
+  }
+
+  Future<void> deleteTransaction(String tripId, String transactionId) async
+  {
+    await transactions(tripId).doc(transactionId).delete();
   }
 
   CollectionReference reimbursements(String tripId)

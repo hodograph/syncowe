@@ -1,10 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:syncowe/models/notification.dart';
 import 'package:syncowe/models/notification_token.dart';
 import 'package:syncowe/models/user.dart' as syncowe_user;
 
-class UserFirestoreService {
+part 'user_firestore.g.dart';
+
+@riverpod
+class UserFirestoreService extends _$UserFirestoreService{
+
+  @override
+  Object? build() => UserFirestoreService();
+
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final CollectionReference users = FirebaseFirestore.instance.collection("Users").withConverter<syncowe_user.User>(
     fromFirestore: syncowe_user.User.fromFirestore,
@@ -106,5 +114,4 @@ class UserFirestoreService {
 
     return snapshot.data() as Notification;
   }
-
 }

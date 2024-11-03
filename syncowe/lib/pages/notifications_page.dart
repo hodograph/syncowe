@@ -1,20 +1,23 @@
 import 'package:firebase_pagination/firebase_pagination.dart';
 import 'package:flutter/material.dart' hide Notification;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_time_ago/get_time_ago.dart';
 import 'package:syncowe/models/notification.dart';
 import 'package:syncowe/pages/transaction_summary_page.dart';
 import 'package:syncowe/pages/trip_page.dart';
+import 'package:syncowe/services/firestore/current_transaction.dart';
+import 'package:syncowe/services/firestore/current_trip.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
 
-class NotificationsPage extends StatefulWidget
+class NotificationsPage extends ConsumerStatefulWidget
 {
   const NotificationsPage({super.key});
 
   @override
-  State<NotificationsPage> createState() => _NotificationsPage();
+  ConsumerState<NotificationsPage> createState() => _NotificationsPage();
 }
 
-class _NotificationsPage extends State<NotificationsPage>
+class _NotificationsPage extends ConsumerState<NotificationsPage>
 {
   final _userFirestoreService = UserFirestoreService();
 
@@ -44,16 +47,18 @@ class _NotificationsPage extends State<NotificationsPage>
               trailing: Text(trailing),
               onTap: () 
               {
+                ref.read(currentTripIdProvider.notifier).setTrip(notification.tripId);
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => TripPage(tripId: notification.tripId))
+                  MaterialPageRoute(builder: (context) => const TripPage())
                 );
 
                 if (notification.transactionId != null)
                 {
+                  ref.read(currentTransactionIdProvider.notifier).setTransactionId(notification.transactionId);
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (context) => 
-                      TransactionSummaryPage(tripId: notification.tripId, transactionId: notification.transactionId!,
-                    ))
+                      const TransactionSummaryPage(),
+                    )
                   );
                 }
               },

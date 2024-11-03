@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncowe/models/user.dart';
-import 'package:syncowe/services/firestore/user_firestore.dart';
+import 'package:syncowe/services/firestore/current_trip.dart';
 
-class MultiUserSelector extends StatefulWidget
+class MultiUserSelector extends ConsumerStatefulWidget
 {
-  final List<String> users;
   final ValueChanged<List<String>> usersChanged;
 
-  const MultiUserSelector({ super.key, required this.users, required this.usersChanged });
+  const MultiUserSelector({ super.key, required this.usersChanged });
 
   @override
-  State<StatefulWidget> createState() => _MultiUserSelector();
+  ConsumerState<MultiUserSelector> createState() => _MultiUserSelector();
 }
 
-class _MultiUserSelector extends State<MultiUserSelector>
+class _MultiUserSelector extends ConsumerState<MultiUserSelector>
 {
   final Map<String, bool> _selectedUsers = <String, bool>{};
-  final UserFirestoreService _userFirestoreService = UserFirestoreService();
 
   @override
   void initState() {
 
-    for (String user in widget.users)
+    for (String user in ref.watch(tripUsersProvider).entries.map((x) => x.key))
     {
       _selectedUsers[user] = true;
     }
@@ -31,48 +30,27 @@ class _MultiUserSelector extends State<MultiUserSelector>
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
-      stream: _userFirestoreService.listenToUsers(widget.users), 
-      builder: (context, snapshot)
-      {
-        if (snapshot.hasError) 
-        {
-          return Center(
-            child: Text('Error: ${snapshot.error}'),
-          );
-        }
-        else if (!snapshot.hasData) 
-        {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-        else
-        {
-          Map<String, User> users = { for (var doc in snapshot.data!.docs) doc.id : doc.data() as User };
+    var users = ref.watch(tripUsersProvider);
           
-          return ListView.builder
-          (
-            itemCount: widget.users.length,
-            itemBuilder: (context, index)
-            {
-              String userId = widget.users[index];
-              User user = users[userId]!;
-              return CheckboxListTile(
-                value: _selectedUsers[userId],
-                title: Text(user.getDisplayString()),
-                onChanged: (value) 
-                {
-                  setState(() {
-                    _selectedUsers[userId] = value!;
-                  });
+    return ListView.builder
+    (
+      itemCount: users.length,
+      itemBuilder: (context, index)
+      {
+        String userId = users.entries.toList()[index].key;
+        User user = users[userId]!;
+        return CheckboxListTile(
+          value: _selectedUsers[userId],
+          title: Text(user.getDisplayString()),
+          onChanged: (value) 
+          {
+            setState(() {
+              _selectedUsers[userId] = value!;
+            });
 
-                  widget.usersChanged(_selectedUsers.entries.where((x) => x.value).map((x) => x.key).toList());
-                }
-              );
-            }
-          );
-        }
+            widget.usersChanged(_selectedUsers.entries.where((x) => x.value).map((x) => x.key).toList());
+          }
+        );
       }
     );
   }

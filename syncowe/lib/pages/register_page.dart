@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncowe/services/auth/auth_service.dart';
 
-class RegisterPage extends StatefulWidget{
+class RegisterPage extends ConsumerStatefulWidget{
   final void Function()? onTap;
   const RegisterPage({super.key, required this.onTap});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage>
+class _RegisterPageState extends ConsumerState<RegisterPage>
 {
 
   // text controllers
@@ -27,7 +27,7 @@ class _RegisterPageState extends State<RegisterPage>
     }
     else
     {
-      final authService = Provider.of<AuthService>(context, listen: false);
+      final authService = ref.read(authServiceProvider.notifier);
       try
       {
         await authService.signUpWithEmailAndPassword(emailController.text, passwordController.text, nameController.text);

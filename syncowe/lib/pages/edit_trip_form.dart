@@ -1,19 +1,20 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncowe/components/user_manager.dart';
 import 'package:syncowe/models/trip.dart';
+import 'package:syncowe/services/firestore/current_trip.dart';
 import 'package:syncowe/services/firestore/trip_firestore.dart';
 
-class EditTripForm extends StatefulWidget
+class EditTripForm extends ConsumerStatefulWidget
 {
-  final String? tripId;
-  const EditTripForm({super.key, required this.tripId});
+  const EditTripForm({super.key});
 
   @override
-  State<StatefulWidget> createState() => _EditTripForm();
+  ConsumerState<EditTripForm> createState() => _EditTripForm();
 }
 
-class _EditTripForm extends State<EditTripForm>
+class _EditTripForm extends ConsumerState<EditTripForm>
 {
   List<String> _users = <String>[];
 
@@ -21,35 +22,10 @@ class _EditTripForm extends State<EditTripForm>
 
   final TripFirestoreService _tripFirestoreService = TripFirestoreService();
 
-  Trip? tripToEdit;
-
-  @override
-  void initState() {
-    initTripData();
-
-    super.initState();
-  }
-
-  Future<void> initTripData() async
-  {
-    if (widget.tripId != null){
-      tripToEdit = await _tripFirestoreService.getTrip(widget.tripId!);
-      setState(() {
-        if(tripToEdit != null)
-        {
-          for (String userId in tripToEdit!.sharedWith)
-          {
-            _users.add(userId);
-          }
-        }
-
-        _nameController.text = tripToEdit?.name ?? "";
-      });
-    }
-  }
-
   void updateTrip()
   {
+    String? tripId = ref.watch(currentTripIdProvider);
+    
     if(_nameController.text.isNotEmpty)
     {
       String currentUserId = FirebaseAuth.instance.currentUser!.uid;
@@ -63,19 +39,23 @@ class _EditTripForm extends State<EditTripForm>
         name: _nameController.text,
         sharedWith: _users);
 
-      _tripFirestoreService.addOrUpdateTrip(trip, widget.tripId);
+      _tripFirestoreService.addOrUpdateTrip(trip, tripId);
 
       Navigator.pop(context);
     }
   }
 
   @override
-  Widget build(BuildContext context) {    
+  Widget build(BuildContext context) {
+    Trip? currentTrip = ref.watch(currentTripProvider);
+    _nameController.text = currentTrip?.name ?? "";
+    _users = ref.watch(tripUsersProvider).entries.map((x) => x.key).toList();
+
     return SafeArea
     (
       child: Scaffold(
         appBar: AppBar(
-          title: Text("${widget.tripId == null ? "Create" : "Edit"} Trip"),
+          title: Text("${currentTrip == null ? "Create" : "Edit"} Trip"),
           centerTitle: true,
         ),
         body: 
@@ -104,7 +84,7 @@ class _EditTripForm extends State<EditTripForm>
                 Center( 
                   child: TextButton(
                     onPressed: () => updateTrip(), 
-                    child: Text("${widget.tripId == null ? "Create" : "Update"} Trip")
+                    child: Text("${currentTrip == null ? "Create" : "Update"} Trip")
                   )
                 )
               ],
