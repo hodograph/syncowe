@@ -18,14 +18,13 @@ class _MultiUserSelector extends ConsumerState<MultiUserSelector>
   final Map<String, bool> _selectedUsers = <String, bool>{};
 
   @override
-  void initState() {
-
-    for (String user in ref.watch(tripUsersProvider).entries.map((x) => x.key))
+  void initState() {    
+    super.initState();
+    
+    for (String user in ref.read(tripUsersProvider).entries.map((x) => x.key))
     {
       _selectedUsers[user] = true;
     }
-    
-    super.initState();
   }
 
   @override

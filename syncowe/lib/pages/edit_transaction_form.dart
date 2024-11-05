@@ -5,6 +5,8 @@ import 'package:currency_textfield/currency_textfield.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:math_expressions/math_expressions.dart';
+import 'package:math_keyboard/math_keyboard.dart';
 import 'package:syncowe/components/multi_user_selector.dart';
 import 'package:syncowe/components/spin_edit.dart';
 import 'package:syncowe/components/user_selector.dart';
@@ -33,11 +35,14 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
 
   final TextEditingController _nameController = TextEditingController();
 
-  CurrencyTextFieldController _totalAmountController = CurrencyTextFieldController(currencySymbol: '\$',
-    thousandSymbol: ',',
-    decimalSymbol: '.',
-    enableNegative: false,
-    showZeroValue: true);
+  // CurrencyTextFieldController _totalAmountController = CurrencyTextFieldController(currencySymbol: '\$',
+  //   thousandSymbol: ',',
+  //   decimalSymbol: '.',
+  //   enableNegative: false,
+  //   showZeroValue: true);
+
+  final MathFieldEditingController _totalAmountController = MathFieldEditingController();
+  double _total = 0;
 
   final List<Debt> _debts = <Debt>[];
 
@@ -45,6 +50,12 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
 
   SplitType _splitType = SplitType.evenSplit;
   String? _payer;
+
+  @override
+  void dispose() {
+    _totalAmountController.dispose();
+    super.dispose();
+  }
 
   Future<void> addDebt() async
   {
@@ -162,12 +173,13 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
     {
       _nameController.text = currentTransaction.transactionName;
       _payer = currentTransaction.payer;
-      _totalAmountController = CurrencyTextFieldController(currencySymbol: '\$',
-        thousandSymbol: ',',
-        decimalSymbol: '.',
-        enableNegative: false,
-        showZeroValue: true,
-        initDoubleValue: currentTransaction.total);
+      _total = currentTransaction.total;
+      // _totalAmountController = CurrencyTextFieldController(currencySymbol: '\$',
+      //   thousandSymbol: ',',
+      //   decimalSymbol: '.',
+      //   enableNegative: false,
+      //   showZeroValue: true,
+      //   initDoubleValue: currentTransaction.total);
       _splitType = currentTransaction.splitType;
 
       var debts = currentTransaction.debts;
@@ -180,6 +192,8 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
     {
       _payer = UserFirestoreService().currentUserId();
     }
+
+    _totalAmountController.updateValue(Parser().parse("$_total"));
 
     setState(() {
       
@@ -256,6 +270,26 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
     }
   }
 
+  bool calculateTotal()
+  {
+    bool successfullyCalculated = false;
+
+    try
+    {
+      _total = TeXParser(_totalAmountController.currentEditingValue()).parse().evaluate(EvaluationType.REAL, ContextModel());
+      _totalAmountController.updateValue(Parser().parse(_total.toStringAsFixed(2)));
+      _total = TeXParser(_totalAmountController.currentEditingValue()).parse().evaluate(EvaluationType.REAL, ContextModel());
+      successfullyCalculated = true;
+    }
+    catch (_)
+    {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Total amount could not be parsed.")));
+      successfullyCalculated = false;
+    }
+
+    return successfullyCalculated;
+  }
+
   Future<void> submitTransaction() async
   {
     Transaction? transactionToEdit = ref.watch(currentTransactionProvider);
@@ -263,70 +297,73 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
     String? currentTransactionId = ref.watch(currentTransactionIdProvider);
 
     String? error;
-    if(_nameController.text.isNotEmpty)
+    if(calculateTotal())
     {
-      if(_payer != null)
+      if(_nameController.text.isNotEmpty)
       {
-        if(_debts.isNotEmpty)
+        if(_payer != null)
         {
-          if(_debts.every((debt) => debt.debtor.isNotEmpty))
+          if(_debts.isNotEmpty)
           {
-            if(_totalAmountController.text.isNotEmpty && _totalAmountController.doubleValue > 0)
+            if(_debts.every((debt) => debt.debtor.isNotEmpty))
             {
-              var transaction = Transaction(
-                transactionName: _nameController.text,
-                payer: _payer!, 
-                total: _totalAmountController.doubleValue,
-                splitType: _splitType,
-                debts: _debts,
-                createdDate: transactionToEdit?.createdDate);
-
-              if (calculateDebts(transaction))
+              if(_total > 0)
               {
-                String docId = await _tripFirestoreService.addOrUpdateTransaction(transaction, currentTripId!, currentTransactionId);
+                var transaction = Transaction(
+                  transactionName: _nameController.text,
+                  payer: _payer!, 
+                  total: _total,
+                  splitType: _splitType,
+                  debts: _debts,
+                  createdDate: transactionToEdit?.createdDate);
 
-                if (mounted)
+                if (calculateDebts(transaction))
                 {
-                  // If this is editing a transaction, go up one page before pushing replacement.
-                  // Pushing replacement forces a refresh of the summary page.
-                  if(currentTransactionId != null)
+                  String docId = await _tripFirestoreService.addOrUpdateTransaction(transaction, currentTripId!, currentTransactionId);
+
+                  if (mounted)
                   {
-                    Navigator.of(context).pop();
+                    // If this is editing a transaction, go up one page before pushing replacement.
+                    // Pushing replacement forces a refresh of the summary page.
+                    if(currentTransactionId != null)
+                    {
+                      Navigator.of(context).pop();
+                    }
+                    // If this is a new transaction, set the transaction ID.
+                    else
+                    {
+                      ref.read(currentTransactionIdProvider.notifier).setTransactionId(docId);
+                    }
+                    
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => const TransactionSummaryPage()));
                   }
-                  // If this is a new transaction, set the transaction ID.
-                  else
-                  {
-                    ref.read(currentTransactionIdProvider.notifier).setTransactionId(docId);
-                  }
-                  
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const TransactionSummaryPage()));
                 }
+              }
+              else
+              {
+                error = "Total must be greater than \$0";
               }
             }
             else
             {
-              error = "Total must be greater than \$0";
+              error = "All Debts must have a debtor defined.";
             }
           }
           else
           {
-            error = "All Debts must have a debtor defined.";
+            error = "One or more Debts must be defined.";
           }
         }
         else
         {
-          error = "One or more Debts must be defined.";
+          error = "Payer cannot be None";
         }
       }
       else
       {
-        error = "Payer cannot be None";
+        error = "Transaction name cannot be empty.";
       }
-    }
-    else
-    {
-      error = "Transaction name cannot be empty.";
     }
 
     if (error != null && mounted)
@@ -351,7 +388,8 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
         final transaction = Transaction.fromJson(callResult.data);
         _nameController.text = transaction.transactionName;
         _splitType = transaction.splitType;
-        _totalAmountController.text = transaction.total.toStringAsFixed(2); 
+        _totalAmountController.updateValue(Parser().parse(transaction.total.toStringAsFixed(2)));
+        _total = transaction.total;
 
         _debts.clear();
         _debts.addAll(transaction.debts);
@@ -414,10 +452,20 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
                   initialUser: _payer 
                 ),
                 const SizedBox(height: 15,),
-                TextField(
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                // TextField(
+                //   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                //   controller: _totalAmountController,
+                //   decoration: const InputDecoration(label: Text("Total")),
+                // ),
+                MathField(
+                  keyboardType: MathKeyboardType.expression,
+                  variables: const [],
+                  decoration: const InputDecoration(
+                    label: Text("Total"),
+                    prefix: Icon(Icons.attach_money)
+                  ),
                   controller: _totalAmountController,
-                  decoration: const InputDecoration(label: Text("Total")),
+                  onSubmitted: (value) => calculateTotal
                 ),
                 const SizedBox(height: 15,),
                 DropdownButtonFormField<SplitType>(
