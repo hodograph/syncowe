@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'package:math_keyboard/math_keyboard.dart';
+import 'package:syncowe/components/debt_editor.dart';
 import 'package:syncowe/components/multi_user_selector.dart';
 import 'package:syncowe/components/spin_edit.dart';
 import 'package:syncowe/components/user_selector.dart';
@@ -44,7 +45,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
   final MathFieldEditingController _totalAmountController = MathFieldEditingController();
   double _total = 0;
 
-  final List<Debt> _debts = <Debt>[];
+  final List<DebtEditor> _debts = <DebtEditor>[];
 
   bool processingImage = false;
 
@@ -55,6 +56,25 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
   void dispose() {
     _totalAmountController.dispose();
     super.dispose();
+  }
+
+  DebtEditor createEmptyDebt()
+  {
+    return createDebtEditor(Debt(debtor: "", memo: "", amount: 0));
+  }
+
+  DebtEditor createDebtEditor(Debt debt)
+  {
+    return DebtEditor(debt: debt, 
+      deleteAction: deleteDebt,
+      splitAction: splitDebt);
+  }
+
+  void deleteDebt(DebtEditor debt)
+  {
+    setState(() {
+      _debts.remove(debt);
+    });
   }
 
   Future<void> addDebt() async
@@ -93,7 +113,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
       {
         setState(() {
           for (String userId in userDebtsToAdd){
-            _debts.add(Debt(debtor: userId, memo: "", amount: 0));
+            _debts.add(createDebtEditor(Debt(debtor: userId, memo: "", amount: 0)));
           }
         });
       }
@@ -101,14 +121,14 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
     else
     {
       setState(() {
-        _debts.add(Debt(debtor: "", memo: "", amount: 0));
+        _debts.add(createEmptyDebt());
       });
     }
   }
 
-  void splitDebt(Debt debt) async
+  void splitDebt(DebtEditor debt) async
   {
-    if(debt.amount > 0)
+    if(debt.debt.amount > 0)
     {
       int? split = await showDialog<int>
       (
@@ -142,18 +162,16 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
 
       if (split != null && split > 1)
       {
-        double amount = debt.amount / split;
+        double amount = debt.debt.amount / split;
         int originalDebtIndex = _debts.indexOf(debt);
         _debts.remove(debt);
         for (int i = 0; i < split; i++)
         {
+          DebtEditor newDebt = createEmptyDebt();
+          newDebt.debt.amount = amount;
+          newDebt.debt.memo = "${debt.debt.memo} / $split";
           setState(() {
-            _debts.insert(originalDebtIndex, Debt
-            (
-              amount: amount,
-              memo: "${debt.memo} / $split",
-              debtor: ""
-            ));
+            _debts.insert(originalDebtIndex, newDebt);
           });
         }
       }
@@ -185,7 +203,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
       var debts = currentTransaction.debts;
       for (Debt debt in debts)
       {
-        _debts.add(debt);
+        _debts.add(createDebtEditor(debt));
       }
     }
     else
@@ -290,6 +308,13 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
     return successfullyCalculated;
   }
 
+  bool parseDebts()
+  {
+    List<bool> parsed = _debts.map((x) => x.submit()).toList();
+
+    return !parsed.contains(false);
+  }
+
   Future<void> submitTransaction() async
   {
     Transaction? transactionToEdit = ref.watch(currentTransactionProvider);
@@ -297,15 +322,15 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
     String? currentTransactionId = ref.watch(currentTransactionIdProvider);
 
     String? error;
-    if(calculateTotal())
+    if(calculateTotal() && parseDebts())
     {
       if(_nameController.text.isNotEmpty)
       {
-        if(_payer != null)
+        if(_payer?.isNotEmpty ?? false)
         {
           if(_debts.isNotEmpty)
           {
-            if(_debts.every((debt) => debt.debtor.isNotEmpty))
+            if(_debts.every((debt) => debt.debt.debtor.isNotEmpty))
             {
               if(_total > 0)
               {
@@ -314,7 +339,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
                   payer: _payer!, 
                   total: _total,
                   splitType: _splitType,
-                  debts: _debts,
+                  debts: _debts.map((x) => x.debt).toList(),
                   createdDate: transactionToEdit?.createdDate);
 
                 if (calculateDebts(transaction))
@@ -392,7 +417,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
         _total = transaction.total;
 
         _debts.clear();
-        _debts.addAll(transaction.debts);
+        _debts.addAll(transaction.debts.map((x) => createDebtEditor(x)).toList());
       }
       catch(e)
       {
@@ -465,7 +490,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
                     prefix: Icon(Icons.attach_money)
                   ),
                   controller: _totalAmountController,
-                  onSubmitted: (value) => calculateTotal
+                  onSubmitted: (value) => calculateTotal()
                 ),
                 const SizedBox(height: 15,),
                 DropdownButtonFormField<SplitType>(
@@ -510,70 +535,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
                       return const SizedBox(height: 75,);
                     }
 
-                    Debt debt = _debts[index];
-
-                    final memoController = TextEditingController(text: debt.memo);
-                    final amountController = CurrencyTextFieldController(currencySymbol: '\$',
-                      thousandSymbol: ',',
-                      decimalSymbol: '.',
-                      enableNegative: false,
-                      showZeroValue: true,
-                      initDoubleValue: debt.amount);
-
-                    final userSelector = UserSelector(
-                      onSelectedUserChanged: (user) => 
-                        setState(() {
-                          debt.debtor = user?.id ?? "";
-                        }),
-                      label: "Debtor",
-                      initialUser: debt.debtor,
-                    );
-
-                    return ListTile(
-                      title: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              children: [
-                                TextField(
-                                  controller: memoController,
-                                  onChanged: (value) => debt.memo = value,
-                                  decoration: const InputDecoration(label: Text("Memo")),
-                                ),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: userSelector
-                                    ),
-                                    const SizedBox(width: 15,),
-                                    Expanded(
-                                      child: TextField(
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        controller: amountController,
-                                        onChanged: (value) => debt.amount = amountController.doubleValue,
-                                        decoration: const InputDecoration(label: Text("Amount")),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              IconButton(
-                                onPressed: () => setState(() => _debts.removeAt(index)),
-                                icon: const Icon(Icons.delete),
-                              ),
-                              IconButton(
-                                onPressed: () => splitDebt(debt),
-                                icon: const Icon(Icons.call_split_rounded),
-                              )
-                          ],)
-                        ],
-                      )
-                    );
+                    return _debts[index];
                   }
                 ),
               ],

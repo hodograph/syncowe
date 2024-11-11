@@ -123,7 +123,7 @@ class AuthService extends _$AuthService{
       _userFirestoreService.addOrUpdateUser(
         syncowe_user.User(
           displayName: userCredential.user!.displayName, 
-          email: userCredential.user!.email!, 
+          email: userCredential.user!.email ?? "Unknown", 
           id: userCredential.user!.uid, 
           picture: userCredential.user!.photoURL)
       );
