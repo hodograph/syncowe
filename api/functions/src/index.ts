@@ -135,7 +135,7 @@ async (event) =>
 
   const notification = event.data?.data() as Notification;
 
-  tokens.forEach((token) => 
+  for(const token of tokens.docs)
   {
     const notificationToken = token.data() as NotificationToken;
 
@@ -150,8 +150,8 @@ async (event) =>
       token: notificationToken.token
     }
     
-    admin.messaging().send(payload)
-  });
+    await admin.messaging().send(payload)
+  }
 });
 
 exports.transactionCreated = onDocumentCreatedWithAuthContext(`/${tripsCollectionName}` +
@@ -213,11 +213,11 @@ async (event) => {
 exports.migrateDocumentIds = onRequest({timeoutSeconds: 540},async (req, res) =>
 {
   var trips = await firestore.collection(tripsCollectionName).get()
-  trips.docs.forEach(async (tripDoc) =>
+  for (const tripDoc of trips.docs)
   {
     var debtPairs = await tripDoc.ref.collection(overallDebtsCollectionName).get();
     
-    debtPairs.docs.forEach(async (debtPairDoc) => 
+    for(const debtPairDoc of debtPairs.docs)
     {
       var debtPair = debtPairDoc.data() as DebtPair;
       let debtPairId = "";
@@ -236,16 +236,16 @@ exports.migrateDocumentIds = onRequest({timeoutSeconds: 540},async (req, res) =>
 
       var debtSummaries = await debtPairDoc.ref.collection(overallDebtSummaryCollectionName).get();
 
-      debtSummaries.docs.forEach(async (debtSummaryDoc) => 
+      for (const debtSummaryDoc of debtSummaries.docs)
       {
         var debtSummary = debtSummaryDoc.data() as OverallDebtSummary;
         await newDebtPairDoc.collection(overallDebtSummaryCollectionName).doc(debtSummary.transactionId).set(debtSummary);
         await debtSummaryDoc.ref.delete();
-      });
+      }
 
       await debtPairDoc.ref.delete();
-    });
-  });
+    }
+  }
 
   res.status(200).end();
 });
@@ -265,7 +265,8 @@ async function updateOverallSummariesFromTransaction(
   const tripDoc = firestore
     .collection(tripsCollectionName).doc(tripId);
 
-  newTransaction.calculatedDebts.forEach(async (calculatedDebt) => {
+  for (const calculatedDebt of newTransaction.calculatedDebts)
+  {
     if (calculatedDebt.debtor == calculatedDebt.owedTo) {
       if(calculatedDebt.owedTo != submittingUser)
       {
@@ -355,7 +356,7 @@ async function updateOverallSummariesFromTransaction(
         transactionId,
         undefined
       )));
-  });
+  }
 }
 
 /**
@@ -370,17 +371,19 @@ async function deleteOverallSummaries(tripId: string, transactionId: string) {
   // Clear existing data related to this transaction.
   const allOverallDebts =
     await tripDoc.collection(overallDebtsCollectionName).get();
-  allOverallDebts.docs.forEach( async (overallDebtDoc) => {
+  for (const overallDebtDoc of allOverallDebts.docs)
+  {
     const debtSummaries = await overallDebtDoc.ref
       .collection(overallDebtSummaryCollectionName).where(
         nameof<OverallDebtSummary>("transactionId"),
         "==",
         transactionId).get();
 
-    debtSummaries.docs.forEach(async (debtSummary) => {
+    for (const debtSummary of debtSummaries.docs)
+    {
       await debtSummary.ref.delete();
-    });
-  });
+    }
+  }
 }
 
 /**
@@ -490,13 +493,13 @@ async function updateOverallSummariesFromReimbursement(
     {
       const archiveParamUpdate: {[key:string]: any} = {};
       archiveParamUpdate[nameof<OverallDebtSummary>("archived")] = true;
-      debtSummariesRef.forEach((debtSummaryRef) =>
+      for (const debtSummaryRef of debtSummariesRef.docs)
       {
-        debtSummaryRef.ref.update(archiveParamUpdate)
-      });
+        await debtSummaryRef.ref.update(archiveParamUpdate)
+      }
     }
 
-    firestore
+    await firestore
         .collection(usersCollectionName)
         .doc(newReimbursement.payer)
         .collection(notificationsCollectionName)
