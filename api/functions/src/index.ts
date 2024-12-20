@@ -210,45 +210,45 @@ async (event) => {
     event.params.transactionId);
 });
 
-exports.migrateDocumentIds = onRequest({timeoutSeconds: 540},async (req, res) =>
-{
-  var trips = await firestore.collection(tripsCollectionName).get()
-  for (const tripDoc of trips.docs)
-  {
-    var debtPairs = await tripDoc.ref.collection(overallDebtsCollectionName).get();
+// exports.migrateDocumentIds = onRequest({timeoutSeconds: 540},async (req, res) =>
+// {
+//   var trips = await firestore.collection(tripsCollectionName).get()
+//   for (const tripDoc of trips.docs)
+//   {
+//     var debtPairs = await tripDoc.ref.collection(overallDebtsCollectionName).get();
     
-    for(const debtPairDoc of debtPairs.docs)
-    {
-      var debtPair = debtPairDoc.data() as DebtPair;
-      let debtPairId = "";
+//     for(const debtPairDoc of debtPairs.docs)
+//     {
+//       var debtPair = debtPairDoc.data() as DebtPair;
+//       let debtPairId = "";
 
-      if(debtPair.user1 < debtPair.user2)
-      {
-        debtPairId = debtPair.user1 + debtPair.user2;
-      }
-      else
-      {
-        debtPairId = debtPair.user2 + debtPair.user1;
-      }
+//       if(debtPair.user1 < debtPair.user2)
+//       {
+//         debtPairId = debtPair.user1 + debtPair.user2;
+//       }
+//       else
+//       {
+//         debtPairId = debtPair.user2 + debtPair.user1;
+//       }
 
-      var newDebtPairDoc = tripDoc.ref.collection(overallDebtsCollectionName).doc(debtPairId)
-      await newDebtPairDoc.set(debtPair);
+//       var newDebtPairDoc = tripDoc.ref.collection(overallDebtsCollectionName).doc(debtPairId)
+//       await newDebtPairDoc.set(debtPair);
 
-      var debtSummaries = await debtPairDoc.ref.collection(overallDebtSummaryCollectionName).get();
+//       var debtSummaries = await debtPairDoc.ref.collection(overallDebtSummaryCollectionName).get();
 
-      for (const debtSummaryDoc of debtSummaries.docs)
-      {
-        var debtSummary = debtSummaryDoc.data() as OverallDebtSummary;
-        await newDebtPairDoc.collection(overallDebtSummaryCollectionName).doc(debtSummary.transactionId).set(debtSummary);
-        await debtSummaryDoc.ref.delete();
-      }
+//       for (const debtSummaryDoc of debtSummaries.docs)
+//       {
+//         var debtSummary = debtSummaryDoc.data() as OverallDebtSummary;
+//         await newDebtPairDoc.collection(overallDebtSummaryCollectionName).doc(debtSummary.transactionId).set(debtSummary);
+//         await debtSummaryDoc.ref.delete();
+//       }
 
-      await debtPairDoc.ref.delete();
-    }
-  }
+//       await debtPairDoc.ref.delete();
+//     }
+//   }
 
-  res.status(200).end();
-});
+//   res.status(200).end();
+// });
 
 /**
  * adds summaries based on transaction.
