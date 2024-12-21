@@ -35,7 +35,7 @@ class DebtEditor extends ConsumerStatefulWidget
 class _DebtEditor extends ConsumerState<DebtEditor>
 {
   late TextEditingController _memoController;
-  late MathFieldEditingController _amountController  = MathFieldEditingController();
+  late final MathFieldEditingController _amountController  = MathFieldEditingController();
 
   late UserSelector _userSelector;
 
