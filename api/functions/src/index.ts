@@ -1,10 +1,10 @@
 import {onDocumentCreated, onDocumentCreatedWithAuthContext, onDocumentDeleted, onDocumentUpdatedWithAuthContext}
   from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
-import {DocumentReference, FieldValue, initializeFirestore, Timestamp}
+import {FieldValue, initializeFirestore, Timestamp}
   from "firebase-admin/firestore";
 //import {defineSecret} from "firebase-functions/params";
-import {onCall, onRequest} from "firebase-functions/v2/https";
+import {onCall} from "firebase-functions/v2/https";
 import DocumentIntelligence,
 {AnalyzeResultOperationOutput,
   getLongRunningPoller,
@@ -182,7 +182,6 @@ async (event) => {
     event.params.transactionId);
 
   const newTransaction = event.data?.after.data() as Transaction;
-
   await updateOverallSummariesFromTransaction(newTransaction,
     event.params.tripId,
     event.params.transactionId,
@@ -264,7 +263,6 @@ async function updateOverallSummariesFromTransaction(
   submittingUser: string | undefined) {
   const tripDoc = firestore
     .collection(tripsCollectionName).doc(tripId);
-
   for (const calculatedDebt of newTransaction.calculatedDebts)
   {
     if (calculatedDebt.debtor == calculatedDebt.owedTo) {
@@ -283,11 +281,10 @@ async function updateOverallSummariesFromTransaction(
           )));
       }
       
-      return;
+      continue;
     }
 
     let debtPair: DebtPair;
-    let debtPairRef: DocumentReference;
 
     let debtPairId = "";
 
@@ -301,39 +298,21 @@ async function updateOverallSummariesFromTransaction(
     }
 
     // get debt pair where payer and debtor are tracked.
-    let debtsRef = await tripDoc.collection(overallDebtsCollectionName).where(
-      nameof<DebtPair>("user1"),
-      "==",
-      calculatedDebt.owedTo).where(
-      nameof<DebtPair>("user2"),
-      "==",
-      calculatedDebt.debtor).get();
+    let debtPairRef = tripDoc.collection(overallDebtsCollectionName).doc(debtPairId);
+    let debtPairDoc = await debtPairRef.get();
 
-    // if debt pair doesn't exist, check the reverse.
-    if (debtsRef.docs.length == 0) {
-      debtsRef = await tripDoc.collection(overallDebtsCollectionName).where(
-        nameof<DebtPair>("user1"),
-        "==",
-        calculatedDebt.debtor).where(
-        nameof<DebtPair>("user2"),
-        "==",
-        calculatedDebt.owedTo).get();
+    if (!debtPairDoc.exists)
+    {
+      debtPair = new DebtPair(calculatedDebt.owedTo, calculatedDebt.debtor);
+      await tripDoc.collection(overallDebtsCollectionName)
+        .doc(debtPairId)
+        .set(serializeFS(debtPair));
 
-      // if debt pair still doesn't exist, create a debt pair.
-      if (debtsRef.docs.length == 0) {
-        debtPair = new DebtPair(calculatedDebt.owedTo, calculatedDebt.debtor);
-        debtPairRef = await tripDoc.collection(overallDebtsCollectionName)
-          .add(serializeFS(debtPair));
-      } else {
-        debtPair = debtsRef.docs[0].data() as DebtPair;
-        debtPairRef = debtsRef.docs[0].ref;
-      }
-    } else {
-      debtPair = debtsRef.docs[0].data() as DebtPair;
-      debtPairRef = debtsRef.docs[0].ref;
+      debtPairRef = tripDoc.collection(overallDebtsCollectionName).doc(debtPairId);
+      debtPairDoc = await debtPairRef.get();
     }
 
-    debtPairRef.collection(overallDebtSummaryCollectionName).doc(debtPairId).set(
+    debtPairRef.collection(overallDebtSummaryCollectionName).doc(transactionId).set(
       serializeFS(new OverallDebtSummary(
         calculatedDebt.debtor,
         calculatedDebt.owedTo,
@@ -381,7 +360,10 @@ async function deleteOverallSummaries(tripId: string, transactionId: string) {
 
     for (const debtSummary of debtSummaries.docs)
     {
-      await debtSummary.ref.delete();
+      if(debtSummary.exists)
+      {
+        await debtSummary.ref.delete();
+      }
     }
   }
 }
@@ -402,47 +384,33 @@ async function updateOverallSummariesFromReimbursement(
     .collection(tripsCollectionName).doc(tripId);
 
   let debtPair: DebtPair;
-  let debtPairRef: DocumentReference;
+  
+  let debtPairId = "";
+
+  if(newReimbursement.payer < newReimbursement.recipient)
+  {
+    debtPairId = newReimbursement.payer + newReimbursement.recipient;
+  }
+  else
+  {
+    debtPairId = newReimbursement.recipient + newReimbursement.payer;
+  }
 
   // get debt pair where payer and debtor are tracked.
-  let debtsRef = await tripDoc.collection(overallDebtsCollectionName).where(
-    nameof<DebtPair>("user1"),
-    "==",
-    newReimbursement.payer).where(
-    nameof<DebtPair>("user2"),
-    "==",
-    newReimbursement.recipient).get();
+  let debtPairRef = tripDoc.collection(overallDebtsCollectionName).doc(debtPairId);
+  let debtPairDoc = await debtPairRef.get();
 
-  // if debt pair doesn't exist, check the reverse.
-  if (debtsRef.docs.length == 0) 
+  if (!debtPairDoc.exists)
   {
-    debtsRef = await tripDoc.collection(overallDebtsCollectionName).where(
-      nameof<DebtPair>("user1"),
-      "==",
-      newReimbursement.recipient).where(
-      nameof<DebtPair>("user2"),
-      "==",
-      newReimbursement.payer).get();
+    debtPair = new DebtPair(newReimbursement.payer, newReimbursement.recipient);
+    await tripDoc.collection(overallDebtsCollectionName)
+      .doc(debtPairId)
+      .set(serializeFS(debtPair));
 
-    // if debt pair still doesn't exist, create a debt pair.
-    if (debtsRef.docs.length == 0) 
-    {
-      debtPair = new DebtPair(newReimbursement.payer,
-        newReimbursement.recipient);
-      debtPairRef = await tripDoc.collection(overallDebtsCollectionName)
-        .add(serializeFS(debtPair));
-    } 
-    else 
-    {
-      debtPair = debtsRef.docs[0].data() as DebtPair;
-      debtPairRef = debtsRef.docs[0].ref;
-    }
-  } 
-  else 
-  {
-    debtPair = debtsRef.docs[0].data() as DebtPair;
-    debtPairRef = debtsRef.docs[0].ref;
+    debtPairRef = tripDoc.collection(overallDebtsCollectionName).doc(debtPairId);
+    debtPairDoc = await debtPairRef.get();
   }
+
   let archive: boolean = false;
 
   // Only check and archive debts if reimbursement is confirmed.
@@ -513,17 +481,18 @@ async function updateOverallSummariesFromReimbursement(
   }
 
   debtPairRef.collection(overallDebtSummaryCollectionName)
-      .add(serializeFS(new OverallDebtSummary(
-        newReimbursement.payer,
-        newReimbursement.recipient,
-        newReimbursement.amount,
-        "Reimbursement",
-        reimbursementId,
-        true,
-        !newReimbursement.confirmed,
-        newReimbursement.createdDate,
-        archive
-      )));
+    .doc(reimbursementId)
+    .set(serializeFS(new OverallDebtSummary(
+      newReimbursement.payer,
+      newReimbursement.recipient,
+      newReimbursement.amount,
+      "Reimbursement",
+      reimbursementId,
+      true,
+      !newReimbursement.confirmed,
+      newReimbursement.createdDate,
+      archive
+    )));
 
   if(!newReimbursement.confirmed)
   {
