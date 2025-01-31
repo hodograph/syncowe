@@ -11,7 +11,7 @@ class DebtEditor extends ConsumerStatefulWidget
   final Function(DebtEditor) deleteAction;
   final Function(DebtEditor) splitAction;
 
-  late final bool Function()? _submitAction;
+  bool Function()? _submitAction;
 
   DebtEditor({super.key, required this.debt, required this.deleteAction, required this.splitAction});
 
@@ -60,7 +60,7 @@ class _DebtEditor extends ConsumerState<DebtEditor>
       initialUser: widget.debt.debtor,
     );
 
-    widget._submitAction = calculateAmount;
+    widget._submitAction ??= calculateAmount;
 
     super.initState();
   }

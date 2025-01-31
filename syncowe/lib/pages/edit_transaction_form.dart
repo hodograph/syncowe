@@ -69,7 +69,8 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
 
   DebtEditor createDebtEditor(Debt debt)
   {
-    return DebtEditor(debt: debt, 
+    return DebtEditor(key: UniqueKey(),
+      debt: debt, 
       deleteAction: deleteDebt,
       splitAction: splitDebt);
   }
@@ -548,7 +549,6 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
                       {
                         return const SizedBox(height: 75,);
                       }
-
                       return _debts[index];
                     }
                   ),
