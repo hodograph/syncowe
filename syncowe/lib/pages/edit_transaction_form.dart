@@ -455,111 +455,114 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm>
     return PopScope(
       child: SafeArea
       (
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text("${transactionId == null ? "Create" : "Edit"} Transaction"),
-            centerTitle: true,
-            actions: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                child: FilledButton.icon(
-                  onPressed: _processingImage ? null : populateFromReceipt, 
-                  label: const Text("Auto-Populate"),
-                  icon: _processingImage ? CircularProgressIndicator(color: Theme.of(context).primaryColor, strokeAlign: -1,) : const Icon(Icons.camera_alt),
+        child: MathKeyboardViewInsets(
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text("${transactionId == null ? "Create" : "Edit"} Transaction"),
+              centerTitle: true,
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                  child: FilledButton.icon(
+                    onPressed: _processingImage ? null : populateFromReceipt, 
+                    label: const Text("Auto-Populate"),
+                    icon: _processingImage ? CircularProgressIndicator(color: Theme.of(context).primaryColor, strokeAlign: -1,) : const Icon(Icons.camera_alt),
+                  )
                 )
-              )
-            ],
-          ),
-          body: 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25.0),
-            child: SingleChildScrollView(
-              child:  Column(
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(label: Text("Transaction Name")),
-                  ),
-                  const SizedBox(height: 15,),
-                  UserSelector(
-                    onSelectedUserChanged: (user)
-                    { 
-                      setState(() {
-                        _payer = user?.id ?? "";
-                      });
-                    },
-                    label: "Payer",
-                    initialUser: _payer 
-                  ),
-                  const SizedBox(height: 15,),
-                  // TextField(
-                  //   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  //   controller: _totalAmountController,
-                  //   decoration: const InputDecoration(label: Text("Total")),
-                  // ),
-                  MathField(
-                    keyboardType: MathKeyboardType.expression,
-                    variables: const [],
-                    decoration: const InputDecoration(
-                      label: Text("Total"),
-                      prefix: Icon(Icons.attach_money)
+              ],
+            ),
+            body: 
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 25.0),
+              child: SingleChildScrollView(
+                child:  Column(
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(label: Text("Transaction Name")),
+                      textCapitalization: TextCapitalization.sentences,
                     ),
-                    controller: _totalAmountController,
-                    onSubmitted: (value) => calculateTotal(),
-                  ),
-                  const SizedBox(height: 15,),
-                  DropdownButtonFormField<SplitType>(
-                    isExpanded: true,
-                    value: _splitType,
-                    items: SplitType.values.map((SplitType splitType) => DropdownMenuItem<SplitType>(
-                      value: splitType,
-                      child: Text(splitType.name))).toList(), 
-                    onChanged: (value)
-                    {
-                      if(value != null){
+                    const SizedBox(height: 15,),
+                    UserSelector(
+                      onSelectedUserChanged: (user)
+                      { 
                         setState(() {
-                          _splitType = value;
+                          _payer = user?.id ?? "";
                         });
-                      }
-                    },
-                    decoration: const InputDecoration(label: Text("Remainder Split Method")),
-                  ),
-                  
-                  const SizedBox(height: 15,),
-                  const Divider(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children:
-                    [
-                      const Text("Debts"),
-                      OutlinedButton.icon(
-                        onPressed: addDebt, 
-                        label: const Text("Add Debt"), 
-                        icon: const Icon(Icons.add),
-                      )
-                    ]
-                  ),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _debts.length + 1,
-                    itemBuilder: (context, index)
-                    {
-                      if(index == _debts.length)
+                      },
+                      label: "Payer",
+                      initialUser: _payer 
+                    ),
+                    const SizedBox(height: 15,),
+                    // TextField(
+                    //   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    //   controller: _totalAmountController,
+                    //   decoration: const InputDecoration(label: Text("Total")),
+                    // ),
+                    MathField(
+                      keyboardType: MathKeyboardType.expression,
+                      variables: const [],
+                      decoration: const InputDecoration(
+                        label: Text("Total"),
+                        prefix: Icon(Icons.attach_money)
+                      ),
+                      controller: _totalAmountController,
+                      onSubmitted: (value) => calculateTotal(),
+                    ),
+                    const SizedBox(height: 15,),
+                    DropdownButtonFormField<SplitType>(
+                      isExpanded: true,
+                      value: _splitType,
+                      items: SplitType.values.map((SplitType splitType) => DropdownMenuItem<SplitType>(
+                        value: splitType,
+                        child: Text(splitType.name))).toList(), 
+                      onChanged: (value)
                       {
-                        return const SizedBox(height: 75,);
+                        if(value != null){
+                          setState(() {
+                            _splitType = value;
+                          });
+                        }
+                      },
+                      decoration: const InputDecoration(label: Text("Remainder Split Method")),
+                    ),
+                    
+                    const SizedBox(height: 15,),
+                    const Divider(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children:
+                      [
+                        const Text("Debts"),
+                        OutlinedButton.icon(
+                          onPressed: addDebt, 
+                          label: const Text("Add Debt"), 
+                          icon: const Icon(Icons.add),
+                        )
+                      ]
+                    ),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _debts.length + 1,
+                      itemBuilder: (context, index)
+                      {
+                        if(index == _debts.length)
+                        {
+                          return const SizedBox(height: 75,);
+                        }
+                        return _debts[index];
                       }
-                      return _debts[index];
-                    }
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          floatingActionButton: FilledButton.icon(
-            onPressed: _submittingTransaction ? null : submitTransaction, 
-            label: const Text("Submit"),
-            icon:  _submittingTransaction ? CircularProgressIndicator(color: Theme.of(context).primaryColor, strokeAlign: -1,) : const Icon(Icons.navigate_next_rounded),
+            floatingActionButton: FilledButton.icon(
+              onPressed: _submittingTransaction ? null : submitTransaction, 
+              label: const Text("Submit"),
+              icon:  _submittingTransaction ? CircularProgressIndicator(color: Theme.of(context).primaryColor, strokeAlign: -1,) : const Icon(Icons.navigate_next_rounded),
+            ),
           ),
         ),
       ),

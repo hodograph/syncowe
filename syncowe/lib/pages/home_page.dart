@@ -42,6 +42,7 @@ class _HomePageState extends ConsumerState<HomePage>
     ref.watch(currentTransactionProvider);
     ref.watch(currentTransactionAsyncProvider);
     ref.watch(currentUserProvider);
+    ref.watch(notificationServiceProvider);
 
     return Scaffold(
       bottomNavigationBar: NavigationBar(onDestinationSelected: (int index) {

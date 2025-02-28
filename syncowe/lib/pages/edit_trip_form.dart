@@ -46,10 +46,16 @@ class _EditTripForm extends ConsumerState<EditTripForm>
   }
 
   @override
+  void initState() {
+    super.initState();
+    Trip? currentTrip = ref.read(currentTripProvider);
+    _nameController.text = currentTrip?.name ?? "";
+    _users = ref.read(tripUsersProvider).entries.map((x) => x.key).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     Trip? currentTrip = ref.watch(currentTripProvider);
-    _nameController.text = currentTrip?.name ?? "";
-    _users = ref.watch(tripUsersProvider).entries.map((x) => x.key).toList();
 
     return SafeArea
     (

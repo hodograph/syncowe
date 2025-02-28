@@ -67,6 +67,7 @@ class _AccountPage extends ConsumerState<AccountPage>
           content: TextField(
             controller: displayNameController,
             decoration: const InputDecoration(hintText: 'Full Name'),
+            textCapitalization: TextCapitalization.sentences,
           ),
           actions: [
             ElevatedButton

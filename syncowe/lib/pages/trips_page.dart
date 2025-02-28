@@ -20,7 +20,6 @@ class _TripsPage extends ConsumerState<TripsPage>
 
   @override
   Widget build(BuildContext context) {
-    Future(() => ref.read(currentTripIdProvider.notifier).setTrip(null));
 
     final Map<String, Trip> trips = ref.watch(tripsProvider);
 
@@ -44,7 +43,7 @@ class _TripsPage extends ConsumerState<TripsPage>
                 ref.read(currentTripIdProvider.notifier).setTrip(tripId);
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => const TripPage())
-                );
+                ).then((context) => ref.read(currentTripIdProvider.notifier).setTrip(null));
               },
             );
           }
