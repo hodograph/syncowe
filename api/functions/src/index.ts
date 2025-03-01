@@ -150,7 +150,20 @@ async (event) =>
       token: notificationToken.token
     }
     
-    await admin.messaging().send(payload)
+    try
+    {
+      await admin.messaging().send(payload)
+    }
+    catch(e: any)
+    {
+      if(e.hasOwnProperty("code"))
+      {
+        if(e.code == "INVALID_ARGUMENT" || e.code == "NOT_FOUND" || e.code == "UNREGISTERED")
+        {
+          token.ref.delete();
+        }
+      }
+    }
   }
 });
 
