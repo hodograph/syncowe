@@ -19,8 +19,8 @@ class _TripsPage extends ConsumerState<TripsPage> {
   @override
   Widget build(BuildContext context) {
     final Map<String, Trip> trips = widget.archivedTrips
-        ? ref.watch(tripsProvider)
-        : ref.watch(archivedTripsProvider);
+        ? ref.watch(archivedTripsProvider)
+        : ref.watch(tripsProvider);
 
     return DefaultTabController(
         length: 2,

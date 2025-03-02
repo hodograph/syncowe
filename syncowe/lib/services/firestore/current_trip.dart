@@ -13,8 +13,13 @@ part 'current_trip.g.dart';
 Trip? currentTrip(Ref ref) {
   String? currentTripId = ref.watch(currentTripIdProvider);
   var trips = ref.watch(tripsProvider);
+  var archivedTrips = ref.watch(archivedTripsProvider);
 
-  return trips[currentTripId];
+  if (trips.containsKey(currentTripId)) {
+    return trips[currentTripId];
+  } else {
+    return archivedTrips[currentTripId];
+  }
 }
 
 @riverpod
