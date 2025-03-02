@@ -20,6 +20,8 @@ final currentUserStreamProvider = AutoDisposeStreamProvider<User?>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef CurrentUserStreamRef = AutoDisposeStreamProviderRef<User?>;
 String _$currentFireAuthUserHash() =>
     r'ca0a9f11800f4d8e68897870701a7722a9a52479';
@@ -37,6 +39,8 @@ final currentFireAuthUserProvider =
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef CurrentFireAuthUserRef = AutoDisposeStreamProviderRef<fireauth.User?>;
 String _$currentUserHash() => r'58a3d22287f505137771e7586ea91567ca4786a8';
 
@@ -54,4 +58,4 @@ final currentUserProvider =
 
 typedef _$CurrentUser = AutoDisposeNotifier<User?>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

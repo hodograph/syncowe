@@ -6,7 +6,7 @@ part of 'auth_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$authServiceHash() => r'8099c56946fe045844d2a868fe9cf05c1ec55da7';
+String _$authServiceHash() => r'f708e5a964289bdea3448a8ac53b85469878adf4';
 
 /// See also [AuthService].
 @ProviderFor(AuthService)
@@ -22,4 +22,4 @@ final authServiceProvider =
 
 typedef _$AuthService = AutoDisposeNotifier<Object?>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

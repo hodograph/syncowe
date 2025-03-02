@@ -22,6 +22,8 @@ final currentTransactionProvider =
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef CurrentTransactionRef = AutoDisposeProviderRef<syncowe.Transaction?>;
 String _$currentTransactionAsyncHash() =>
     r'0354e3d94f08ac29412f2a82f7a8881f07b10133';
@@ -39,6 +41,8 @@ final currentTransactionAsyncProvider =
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef CurrentTransactionAsyncRef
     = AutoDisposeFutureProviderRef<syncowe.Transaction?>;
 String _$currentTransactionIdHash() =>
@@ -77,4 +81,4 @@ final loadedTransactionsProvider = AutoDisposeNotifierProvider<
 typedef _$LoadedTransactions
     = AutoDisposeNotifier<Map<String, syncowe.Transaction>?>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

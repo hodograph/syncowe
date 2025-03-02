@@ -14,110 +14,98 @@ import 'package:syncowe/models/notification.dart';
 part 'notification_service.g.dart';
 
 @riverpod
-class NotificationService extends _$NotificationService
-{
+class NotificationService extends _$NotificationService {
   final _userFirestoreService = UserFirestoreService();
 
   @override
-  NotificationToken? build()
-  {
+  NotificationToken? build() {
     return null;
   }
 
-  Future<void> getNotificationToken() async
-  {
+  Future<void> getNotificationToken() async {
     String? currentToken = state?.token;
 
-    final notificationSettings = await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true
-    );
-    
+    final notificationSettings = await FirebaseMessaging.instance
+        .requestPermission(
+            alert: true,
+            announcement: false,
+            badge: true,
+            carPlay: false,
+            criticalAlert: false,
+            provisional: false,
+            sound: true);
+
     String? token;
 
-    if(kIsWeb)
-    {
-      token = "BGvQqHgjEwJXV0oz0HXnMmiylDUpim5QH1ZJjJZoskaYN97CFh-2uoJxlK7Mp5voFoDJyRlSugwyiWNWj3yTmL4";
-    }
-    else if(Platform.isIOS)
-    {
+    if (kIsWeb) {
+      token =
+          "BGvQqHgjEwJXV0oz0HXnMmiylDUpim5QH1ZJjJZoskaYN97CFh-2uoJxlK7Mp5voFoDJyRlSugwyiWNWj3yTmL4";
+    } else if (Platform.isIOS) {
       final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-      if (apnsToken == null)
-      {
+      if (apnsToken == null) {
         return;
       }
     }
 
     final fcmToken = await FirebaseMessaging.instance.getToken(vapidKey: token);
 
-    if(fcmToken != null)
-    {
+    if (fcmToken != null) {
       currentToken = fcmToken;
 
       state = NotificationToken(
-        token: currentToken, 
-        enabled: notificationSettings.authorizationStatus == AuthorizationStatus.authorized
-      );
+          token: currentToken,
+          enabled: notificationSettings.authorizationStatus ==
+              AuthorizationStatus.authorized);
 
       _userFirestoreService.addOrUpdateNotificationToken(state!);
     }
 
-    FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken)
-    {
-      if(currentToken != fcmToken)
-      {
+    FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) {
+      if (currentToken != fcmToken) {
         currentToken = fcmToken;
 
         state = NotificationToken(
-          token: currentToken!, 
-          enabled: notificationSettings.authorizationStatus == AuthorizationStatus.authorized
-        );
+            token: currentToken!,
+            enabled: notificationSettings.authorizationStatus ==
+                AuthorizationStatus.authorized);
 
         _userFirestoreService.addOrUpdateNotificationToken(state!);
       }
     });
   }
 
-  Future<void> initNotificationListening(BuildContext context) async
-  {
+  Future<void> initNotificationListening(BuildContext context) async {
     // Handle if the app was opened via notification from a terminated state.
-    RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    RemoteMessage? initialMessage =
+        await FirebaseMessaging.instance.getInitialMessage();
 
-    if(initialMessage != null && context.mounted)
-    {
+    if (initialMessage != null && context.mounted) {
       _handleNotification(initialMessage, context);
     }
 
     // Handle if the app was opened via notification from the background.
-    FirebaseMessaging.onMessageOpenedApp.listen((message) => _handleNotification(message, context));
+    FirebaseMessaging.onMessageOpenedApp
+        .listen((message) => _handleNotification(message, context));
   }
 
-  void _handleNotification(RemoteMessage message, BuildContext context) async
-  {
+  void _handleNotification(RemoteMessage message, BuildContext context) async {
     String notificationId = message.data["notificationId"];
 
-    Notification notification = await _userFirestoreService.getNotification(notificationId);
+    Notification notification =
+        await _userFirestoreService.getNotification(notificationId);
 
-    if(context.mounted)
-    {
+    if (context.mounted) {
       ref.read(currentTripIdProvider.notifier).setTrip(notification.tripId);
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const TripPage())
-      );
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (context) => const TripPage()));
 
-      ref.read(currentTransactionIdProvider.notifier).setTransactionId(notification.transactionId);
-      if (notification.transactionId != null)
-      {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => 
-            const TransactionSummaryPage(),
-          )
-        );
+      ref
+          .read(currentTransactionIdProvider.notifier)
+          .setTransactionId(notification.transactionId);
+      if (notification.transactionId != null) {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) => const TransactionSummaryPage(),
+        ));
       }
     }
   }

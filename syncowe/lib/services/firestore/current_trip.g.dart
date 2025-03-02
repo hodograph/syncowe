@@ -6,7 +6,7 @@ part of 'current_trip.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$currentTripHash() => r'7f50b32c28f3150efa2c073d224c47e8745634fd';
+String _$currentTripHash() => r'004b79a8d51324b44a01e10eb9cd9f4d42dfa5a7';
 
 /// See also [currentTrip].
 @ProviderFor(currentTrip)
@@ -19,8 +19,30 @@ final currentTripProvider = AutoDisposeProvider<Trip?>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef CurrentTripRef = AutoDisposeProviderRef<Trip?>;
-String _$tripsStreamHash() => r'81ca0b16f018bd6b82aa097ba010a7d16be151f1';
+String _$archivedTripsStreamHash() =>
+    r'5b961f8589c4b28faacb2f42ee6647e11b2a1145';
+
+/// See also [archivedTripsStream].
+@ProviderFor(archivedTripsStream)
+final archivedTripsStreamProvider =
+    AutoDisposeStreamProvider<QuerySnapshot<Object?>>.internal(
+  archivedTripsStream,
+  name: r'archivedTripsStreamProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$archivedTripsStreamHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ArchivedTripsStreamRef
+    = AutoDisposeStreamProviderRef<QuerySnapshot<Object?>>;
+String _$tripsStreamHash() => r'aa70bc98c71b6541f14f57869a0dba0557334541';
 
 /// See also [tripsStream].
 @ProviderFor(tripsStream)
@@ -34,8 +56,10 @@ final tripsStreamProvider =
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef TripsStreamRef = AutoDisposeStreamProviderRef<QuerySnapshot<Object?>>;
-String _$tripUsersHash() => r'4391f7d5ee61b1aa0ad21ccaf8664cfc127d6f95';
+String _$tripUsersHash() => r'4dc8d2c226adde0369244a8f967909e1c73e5ec1';
 
 /// See also [tripUsers].
 @ProviderFor(tripUsers)
@@ -48,8 +72,10 @@ final tripUsersProvider = AutoDisposeProvider<Map<String, User>>.internal(
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef TripUsersRef = AutoDisposeProviderRef<Map<String, User>>;
-String _$tripUsersStreamHash() => r'4c4eb1279a78881df3d565e4a15d886aa65811a3';
+String _$tripUsersStreamHash() => r'f98e216b4e90e63b2cab681732e88d329a3fccf6';
 
 /// See also [tripUsersStream].
 @ProviderFor(tripUsersStream)
@@ -64,10 +90,12 @@ final tripUsersStreamProvider =
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef TripUsersStreamRef
     = AutoDisposeStreamProviderRef<QuerySnapshot<Object?>>;
 String _$tripDebtPairsStreamHash() =>
-    r'beceac14e2be1f5fd2b31cc99c36a4ef3533f50a';
+    r'b11e28509cb77b0730fc685ccacb43fef499564b';
 
 /// See also [tripDebtPairsStream].
 @ProviderFor(tripDebtPairsStream)
@@ -82,6 +110,8 @@ final tripDebtPairsStreamProvider =
   allTransitiveDependencies: null,
 );
 
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
 typedef TripDebtPairsStreamRef
     = AutoDisposeStreamProviderRef<QuerySnapshot<Object?>>;
 String _$currentTripIdHash() => r'9a477cd47d7b8684e7b3d839deb436c37edb5b13';
@@ -115,6 +145,22 @@ final tripsProvider =
 );
 
 typedef _$Trips = AutoDisposeNotifier<Map<String, Trip>>;
+String _$archivedTripsHash() => r'5836aa458df3ca1346857b0220336bf976471a83';
+
+/// See also [ArchivedTrips].
+@ProviderFor(ArchivedTrips)
+final archivedTripsProvider =
+    AutoDisposeNotifierProvider<ArchivedTrips, Map<String, Trip>>.internal(
+  ArchivedTrips.new,
+  name: r'archivedTripsProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$archivedTripsHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$ArchivedTrips = AutoDisposeNotifier<Map<String, Trip>>;
 String _$tripDebtPairsHash() => r'4d86580520b2a2b8a2a1b12e932f6a1a0fe1a8f8';
 
 /// See also [TripDebtPairs].
@@ -132,4 +178,4 @@ final tripDebtPairsProvider =
 
 typedef _$TripDebtPairs = AutoDisposeNotifier<Map<String, DebtPair>>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
