@@ -39,15 +39,30 @@ class _EditTripForm extends ConsumerState<EditTripForm> {
     }
   }
 
-  void archiveTrip() {
+  Future<void> archiveTrip() async {
     String? tripId = ref.read(currentTripIdProvider);
     Trip? trip = ref.read(currentTripProvider);
 
-    if (trip != null) {
+    bool? confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: const Text("Archive trip?"),
+              content: Text(
+                  "Are you sure you want to archive ${trip?.name}?\nYou will not be able to submit any new transactions or reimbursements once this is done."),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text("Cancel")),
+                TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text("Yes")),
+              ],
+            ));
+
+    if (trip != null && confirmed == true) {
       trip.isArchived = true;
       _tripFirestoreService.addOrUpdateTrip(trip, tripId);
     }
-    ;
   }
 
   @override
@@ -105,7 +120,7 @@ class _EditTripForm extends ConsumerState<EditTripForm> {
                       ),
                       Visibility(
                         visible: currentTrip != null,
-                        child: TextButton(
+                        child: FilledButton(
                             onPressed: () => archiveTrip(),
                             style: TextButton.styleFrom(
                                 backgroundColor: Colors.red),

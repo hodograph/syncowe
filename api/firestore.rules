@@ -25,17 +25,28 @@ service cloud.firestore {
         	tripId != null && request.auth.uid in get(/databases/$(database)/documents/Trips/$(tripId)).data.sharedWith;
       }
       
-    	allow read, write: if request.auth != null && request.auth.uid in resource.data.sharedWith;
+      function hasWriteTripAccess()
+      {
+      	return request.auth != null &&
+        	tripId != null && 
+          request.auth.uid in get(/databases/$(database)/documents/Trips/$(tripId)).data.sharedWith &&
+          get(/databases/$(database)/documents/Trips/$(tripId)).data.isArchived == false;
+      }
+      
+    	allow read: if request.auth != null && request.auth.uid in resource.data.sharedWith;
+      allow write: if request.auth != null && request.auth.uid in resource.data.sharedWith && resource.data.isArchived == false;
       allow create: if request.auth != null;
       
       match /Transactions/{document=**}
       {
-      	allow read, write: if hasTripAccess();
+      	allow read: if hasTripAccess();
+        allow write: if hasWriteTripAccess();
       }
       
       match /Reimbursements/{document=**}
       {
-      	allow read, write: if hasTripAccess();
+      	allow read: if hasTripAccess();
+        allow write: if hasWriteTripAccess();
       }
 
       match /OverallDebts/{debtId}

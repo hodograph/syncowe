@@ -164,7 +164,7 @@ class _AccountPage extends ConsumerState<AccountPage> {
                               height: 25,
                             ),
                             FilledButton.icon(
-                              onPressed: _userFirestoreService.deleteAccount,
+                              onPressed: confirmDelete,
                               label: const Text("Delete Account"),
                               icon: const Icon(Icons.delete_forever),
                             )
