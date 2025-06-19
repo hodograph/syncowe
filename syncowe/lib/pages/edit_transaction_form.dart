@@ -6,10 +6,13 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:currency_textfield/currency_textfield.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'package:math_keyboard/math_keyboard.dart';
+import 'package:syncowe/components/calculator_keyboard.dart';
+import 'package:syncowe/components/calculator_keyboard_insets_widget.dart';
 import 'package:syncowe/components/debt_editor.dart';
 import 'package:syncowe/components/multi_user_selector.dart';
 import 'package:syncowe/components/spin_edit.dart';
@@ -43,8 +46,10 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
   //   enableNegative: false,
   //   showZeroValue: true);
 
-  final MathFieldEditingController _totalAmountController =
-      MathFieldEditingController();
+  // final MathFieldEditingController _totalAmountController =
+  //     MathFieldEditingController();
+  final TextEditingController _totalAmountController = TextEditingController();
+
   double _total = 0;
 
   final List<DebtEditor> _debts = <DebtEditor>[];
@@ -55,12 +60,6 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
 
   SplitType _splitType = SplitType.evenSplit;
   String? _payer;
-
-  @override
-  void dispose() {
-    _totalAmountController.dispose();
-    super.dispose();
-  }
 
   DebtEditor createEmptyDebt() {
     return createDebtEditor(Debt(debtor: "", memo: "", amount: 0));
@@ -188,7 +187,8 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
       _payer = UserFirestoreService().currentUserId();
     }
 
-    _totalAmountController.updateValue(Parser().parse("$_total"));
+    _totalAmountController.text =
+        ShuntingYardParser().parse("$_total").toString();
 
     setState(() {});
   }
@@ -281,12 +281,12 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
     bool successfullyCalculated = false;
 
     try {
-      _total = TeXParser(_totalAmountController.currentEditingValue())
+      _total = TeXParser(_totalAmountController.text)
           .parse()
           .evaluate(EvaluationType.REAL, ContextModel());
-      _totalAmountController
-          .updateValue(Parser().parse(_total.toStringAsFixed(2)));
-      _total = TeXParser(_totalAmountController.currentEditingValue())
+      _totalAmountController.text =
+          ShuntingYardParser().parse(_total.toStringAsFixed(2)).toString();
+      _total = TeXParser(_totalAmountController.text)
           .parse()
           .evaluate(EvaluationType.REAL, ContextModel());
       setState(() {});
@@ -393,8 +393,9 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
         final transaction = Transaction.fromJson(callResult.data);
         _nameController.text = transaction.transactionName;
         _splitType = transaction.splitType;
-        _totalAmountController
-            .updateValue(Parser().parse(transaction.total.toStringAsFixed(2)));
+        _totalAmountController.text = ShuntingYardParser()
+            .parse(transaction.total.toStringAsFixed(2))
+            .toString();
         _total = transaction.total;
 
         _debts.clear();
@@ -418,7 +419,8 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
 
     return PopScope(
       child: SafeArea(
-        child: MathKeyboardViewInsets(
+        child: CalculatorKeyboardInsetsWidget(
+          // Wrap with our new insets widget
           child: Scaffold(
             appBar: AppBar(
               title: Text(
@@ -439,6 +441,8 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
                     ))
               ],
             ),
+            resizeToAvoidBottomInset:
+                false, // Important for custom keyboard handling
             body: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 25.0),
               child: SingleChildScrollView(
@@ -469,14 +473,22 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
                     //   controller: _totalAmountController,
                     //   decoration: const InputDecoration(label: Text("Total")),
                     // ),
-                    MathField(
-                      keyboardType: MathKeyboardType.expression,
-                      variables: const [],
+                    // MathField(
+                    //   keyboardType: MathKeyboardType.expression,
+                    //   variables: const [],
+                    //   decoration: const InputDecoration(
+                    //       label: Text("Total"),
+                    //       prefix: Icon(Icons.attach_money)),
+                    //   controller: _totalAmountController,
+                    //   onSubmitted: (value) => calculateTotal(),
+                    // ),
+                    CalculatorKeyboardWidget(
                       decoration: const InputDecoration(
-                          label: Text("Total"),
-                          prefix: Icon(Icons.attach_money)),
+                        labelText: "Total",
+                        prefixText: "\$",
+                      ),
+                      decimalPrecision: 2,
                       controller: _totalAmountController,
-                      onSubmitted: (value) => calculateTotal(),
                     ),
                     const SizedBox(
                       height: 15,
@@ -522,7 +534,8 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
                         itemBuilder: (context, index) {
                           if (index == _debts.length) {
                             return const SizedBox(
-                              height: 75,
+                              height:
+                                  75, // Space for the floating action button
                             );
                           }
                           return _debts[index];
@@ -546,7 +559,24 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
       ),
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          Navigator.of(context).pop();
+          // If pop was prevented by CalculatorKeyboardInsetsWidget or similar,
+          // ensure we manually pop if necessary or handle state.
+          // For now, assuming default behavior or that it's handled.
+          // If using a custom keyboard that traps back button, this might need more logic.
+          // However, our keyboard is an overlay, so system back should work.
+          // If `didPop` is false, it means something else prevented the pop.
+          // If `didPop` is true, it means the pop happened.
+          // The `PopScope` is mainly to handle system back gestures.
+          // If the keyboard is open and user hits system back, we might want to close keyboard first.
+          // For now, this is okay.
+          // The original onPopInvokedWithResult was:
+          // if (!didPop) {
+          //   Navigator.of(context).pop();
+          // }
+          // This seems to force a pop if it was prevented. Let's keep it.
+          if (!didPop) {
+            Navigator.of(context).pop();
+          }
         }
       },
     );

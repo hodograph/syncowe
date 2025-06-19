@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'package:math_keyboard/math_keyboard.dart';
+import 'package:syncowe/components/calculator_keyboard.dart';
 import 'package:syncowe/components/user_selector.dart';
 import 'package:syncowe/models/debt.dart';
 
@@ -23,8 +24,10 @@ class DebtEditor extends ConsumerStatefulWidget {
 
 class _DebtEditor extends ConsumerState<DebtEditor> {
   late TextEditingController _memoController;
-  late final MathFieldEditingController _amountController =
-      MathFieldEditingController();
+  // late final MathFieldEditingController _amountController =
+  //     MathFieldEditingController();
+
+  final TextEditingController _amountController = TextEditingController();
 
   late UserSelector _userSelector;
 
@@ -38,7 +41,8 @@ class _DebtEditor extends ConsumerState<DebtEditor> {
     //   showZeroValue: true,
     //   initDoubleValue: widget.debt.amount);
 
-    _amountController.updateValue(Parser().parse("${widget.debt.amount}"));
+    _amountController.text =
+        ShuntingYardParser().parse("${widget.debt.amount}").toString();
 
     _userSelector = UserSelector(
       onSelectedUserChanged: (user) => setState(() {
@@ -63,12 +67,13 @@ class _DebtEditor extends ConsumerState<DebtEditor> {
     bool successfullyCalculated = false;
 
     try {
-      widget.debt.amount = TeXParser(_amountController.currentEditingValue())
+      widget.debt.amount = TeXParser(_amountController.text)
           .parse()
           .evaluate(EvaluationType.REAL, ContextModel());
-      _amountController
-          .updateValue(Parser().parse(widget.debt.amount.toStringAsFixed(2)));
-      widget.debt.amount = TeXParser(_amountController.currentEditingValue())
+      _amountController.text = ShuntingYardParser()
+          .parse(widget.debt.amount.toStringAsFixed(2))
+          .toString();
+      widget.debt.amount = TeXParser(_amountController.text)
           .parse()
           .evaluate(EvaluationType.REAL, ContextModel());
       successfullyCalculated = true;
@@ -103,22 +108,26 @@ class _DebtEditor extends ConsumerState<DebtEditor> {
                     width: 15,
                   ),
                   Expanded(
-                    // child: TextField(
-                    //   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    //   controller: amountController,
-                    //   onChanged: (value) => widget.debt.amount = amountController.doubleValue,
-                    //   decoration: const InputDecoration(label: Text("Amount")),
-                    // ),
-                    child: MathField(
-                        keyboardType: MathKeyboardType.expression,
-                        variables: const [],
-                        decoration: const InputDecoration(
-                            label: Text("Amount"),
-                            prefix: Icon(Icons.attach_money)),
-                        controller: _amountController,
-                        onChanged: (value) => widget.equation = value,
-                        onSubmitted: (value) => calculateAmount()),
-                  ),
+                      // child: TextField(
+                      //   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      //   controller: amountController,
+                      //   onChanged: (value) => widget.debt.amount = amountController.doubleValue,
+                      //   decoration: const InputDecoration(label: Text("Amount")),
+                      // ),
+                      // child: MathField(
+                      //     keyboardType: MathKeyboardType.expression,
+                      //     variables: const [],
+                      //     decoration: const InputDecoration(
+                      //         label: Text("Amount"),
+                      //         prefix: Icon(Icons.attach_money)),
+                      //     controller: _amountController,
+                      //     onChanged: (value) => widget.equation = value,
+                      //     onSubmitted: (value) => calculateAmount()),
+                      child: CalculatorKeyboardWidget(
+                          controller: _amountController,
+                          decimalPrecision: 2,
+                          decoration: const InputDecoration(
+                              labelText: "Amount", prefixText: "\$"))),
                 ],
               ),
             ],
