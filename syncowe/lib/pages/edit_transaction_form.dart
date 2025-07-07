@@ -121,20 +121,20 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
 
   void splitDebt(DebtEditor debt) async {
     if (debt.debt.amount > 0) {
-      int? split = await showDialog<int>(
+      List<String>? usersToSplitBetween = await showDialog<List<String>>(
           context: context,
           builder: (context) {
-            int amount = 2;
+            List<String> selectedUsers = [];
             return AlertDialog(
               icon: const Icon(Icons.call_split_rounded),
               title: const Text("Split Debt"),
-              content: SpinEdit(
-                  minValue: 2,
-                  initialValue: amount,
-                  onChange: (value) => setState(() => amount = value)),
+              content: SizedBox(
+                  width: double.maxFinite,
+                  child: MultiUserSelector(
+                      usersChanged: (value) => selectedUsers = value)),
               actions: [
                 TextButton(
-                    onPressed: () => Navigator.of(context).pop(amount),
+                    onPressed: () => Navigator.of(context).pop(selectedUsers),
                     child: const Text("Split")),
                 TextButton(
                     onPressed: () => Navigator.of(context).pop(null),
@@ -143,17 +143,27 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
             );
           });
 
-      if (split != null && split > 1) {
-        double amount = debt.debt.amount / split;
-        int originalDebtIndex = _debts.indexOf(debt);
-        _debts.remove(debt);
-        for (int i = 0; i < split; i++) {
-          DebtEditor newDebt = createEmptyDebt();
-          newDebt.debt.amount = amount;
-          newDebt.debt.memo = "${debt.debt.memo} / $split";
-          setState(() {
-            _debts.insert(originalDebtIndex, newDebt);
-          });
+      if (usersToSplitBetween != null) {
+        if (usersToSplitBetween.length > 1) {
+          double amount = debt.debt.amount / usersToSplitBetween.length;
+          int originalDebtIndex = _debts.indexOf(debt);
+          _debts.remove(debt);
+          for (int i = 0; i < usersToSplitBetween.length; i++) {
+            String userId = usersToSplitBetween[i];
+            DebtEditor newDebt = createDebtEditor(Debt(
+                debtor: userId,
+                memo: "${debt.debt.memo} / ${usersToSplitBetween.length}",
+                amount: amount));
+            setState(() {
+              _debts.insert(originalDebtIndex + i, newDebt);
+            });
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content:
+                    Text("Please select at least 2 users to split the debt.")));
+          }
         }
       }
     }
@@ -166,7 +176,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
   }
 
   Future<void> initTransactionData() async {
-    Transaction? currentTransaction = ref.watch(currentTransactionProvider);
+    Transaction? currentTransaction = ref.read(currentTransactionProvider);
     if (currentTransaction != null) {
       _nameController.text = currentTransaction.transactionName;
       _payer = currentTransaction.payer;

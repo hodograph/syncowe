@@ -126,6 +126,8 @@ class _DebtEditor extends ConsumerState<DebtEditor> {
                       child: CalculatorKeyboardWidget(
                           controller: _amountController,
                           decimalPrecision: 2,
+                          onCalculationResult: (value) =>
+                              widget.debt.amount = double.parse(value),
                           decoration: const InputDecoration(
                               labelText: "Amount", prefixText: "\$"))),
                 ],

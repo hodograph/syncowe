@@ -40,8 +40,17 @@ class _CalculatorKeyboardWidgetState
     _controller = widget.controller ?? TextEditingController();
     // Set text to empty if initial value is zero, after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _isEffectivelyZero(_controller.text)) {
-        _controller.text = "";
+      if (mounted) {
+        if (_isEffectivelyZero(_controller.text)) {
+          _controller.text = "";
+        } else {
+          final result = _evaluateExpression(_controller.text);
+          if (widget.decimalPrecision != null) {
+            _controller.text = result.toStringAsFixed(widget.decimalPrecision!);
+          } else {
+            _controller.text = result.toString(); // Default double to string
+          }
+        }
       }
     });
     _focusNode.addListener(_onFocusChange);
@@ -120,6 +129,7 @@ class _CalculatorKeyboardWidgetState
                     onClear: _clearExpression,
                     onEquals: _calculate,
                     onDone: () {
+                      _calculate();
                       _focusNode.unfocus();
                     },
                   ),
