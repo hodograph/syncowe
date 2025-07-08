@@ -62,10 +62,14 @@ class _UserSelector extends ConsumerState<UserSelector> {
 
     return DropdownButtonFormField<User>(
       value: selectedUser,
+      isExpanded: true,
       items: availableUsers
           .map((user) => DropdownMenuItem<User>(
                 value: user,
-                child: Text(user.getDisplayString()),
+                child: Text(
+                  user.getDisplayString(),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ))
           .toList(),
       onChanged: (option) => setState(() {

@@ -103,11 +103,12 @@ class _DebtEditor extends ConsumerState<DebtEditor> {
               ),
               Row(
                 children: [
-                  Expanded(child: _userSelector),
+                  Expanded(flex: 3, child: _userSelector),
                   const SizedBox(
                     width: 15,
                   ),
                   Expanded(
+                      flex: 2,
                       // child: TextField(
                       //   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       //   controller: amountController,
