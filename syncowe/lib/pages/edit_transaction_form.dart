@@ -1,21 +1,15 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:isolate';
 
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:currency_textfield/currency_textfield.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'package:math_keyboard/math_keyboard.dart';
 import 'package:syncowe/components/calculator_keyboard.dart';
 import 'package:syncowe/components/calculator_keyboard_insets_widget.dart';
 import 'package:syncowe/components/debt_editor.dart';
 import 'package:syncowe/components/multi_user_selector.dart';
-import 'package:syncowe/components/spin_edit.dart';
 import 'package:syncowe/components/user_selector.dart';
 import 'package:syncowe/models/calculated_debt.dart';
 import 'package:syncowe/models/calculated_debt_summary_entry.dart';

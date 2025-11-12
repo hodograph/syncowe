@@ -6,9 +6,9 @@ class CalculatorKeyboardInsetsWidget extends ConsumerWidget {
   final Widget child;
 
   const CalculatorKeyboardInsetsWidget({
-    Key? key,
+    super.key,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

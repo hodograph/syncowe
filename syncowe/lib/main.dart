@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:extended_keyboard/extended_keyboard.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,15 +9,13 @@ import 'package:syncowe/firebase_options.dart';
 import 'package:syncowe/services/auth/auth_gate.dart';
 
 void main() async {
-  KeyboardBinding();
-  await SystemKeyboard().init();
   //WidgetsFlutterBinding.ensureInitialized();
-  if (Platform.isIOS) {
-    await Firebase.initializeApp();
-  } else {
+  if (kIsWeb || !Platform.isIOS) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+  } else {
+    await Firebase.initializeApp();
   }
   runApp(
     const ProviderScope(child: MyApp()),

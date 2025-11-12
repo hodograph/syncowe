@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // The main Calculator Keyboard Widget
@@ -347,7 +346,7 @@ class CalculatorKeyboard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           height: 40,
-          color: colorScheme.surfaceVariant,
+          color: colorScheme.surfaceContainerHighest,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -439,12 +438,12 @@ class CalculatorKey extends StatelessWidget {
   final bool isFunction;
 
   const CalculatorKey({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.isOperator = false,
     this.isFunction = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
