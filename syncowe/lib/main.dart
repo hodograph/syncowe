@@ -9,8 +9,8 @@ import 'package:syncowe/firebase_options.dart';
 import 'package:syncowe/services/auth/auth_gate.dart';
 
 void main() async {
-  //WidgetsFlutterBinding.ensureInitialized();
-  if (kIsWeb || !Platform.isIOS) {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
