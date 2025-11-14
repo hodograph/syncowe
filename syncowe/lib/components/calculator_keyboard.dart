@@ -358,11 +358,11 @@ class CalculatorKeyboard extends StatelessWidget {
             ],
           ),
         ),
+        Expanded(child: buildFunctionRow(context)),
         Expanded(child: buildKeyRow(['7', '8', '9', '÷'], context)),
         Expanded(child: buildKeyRow(['4', '5', '6', '×'], context)),
         Expanded(child: buildKeyRow(['1', '2', '3', '-'], context)),
-        Expanded(child: buildKeyRow(['0', '.', '+', '='], context)),
-        Expanded(child: buildFunctionRow(context)),
+        Expanded(child: buildKeyRow(['0', '.', '=', '+'], context)),
       ],
     );
   }
@@ -460,7 +460,7 @@ class CalculatorKey extends StatelessWidget {
       backgroundColor = colorScheme.secondary;
       textColor = colorScheme.onSecondary;
     } else {
-      backgroundColor = colorScheme.surface;
+      backgroundColor = colorScheme.surfaceBright;
       textColor = colorScheme.onSurface;
     }
 

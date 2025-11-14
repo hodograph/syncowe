@@ -115,10 +115,12 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
 
   void splitDebt(DebtEditor debt) async {
     if (debt.debt.amount > 0) {
+      var tripUsers =
+          ref.watch(tripUsersProvider).entries.map((x) => x.key).toList();
       List<String>? usersToSplitBetween = await showDialog<List<String>>(
           context: context,
           builder: (context) {
-            List<String> selectedUsers = [];
+            List<String> selectedUsers = tripUsers;
             return AlertDialog(
               icon: const Icon(Icons.call_split_rounded),
               title: const Text("Split Debt"),
@@ -217,12 +219,6 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
       // Ther is no addOrUpdate method so remove in case this calculated debt already existed.
       transaction.calculatedDebts.remove(calculatedDebt);
       transaction.calculatedDebts.add(calculatedDebt);
-    }
-
-    if (!transaction.calculatedDebts
-        .any((x) => x.debtor == transaction.payer)) {
-      transaction.calculatedDebts.add(
-          CalculatedDebt(debtor: transaction.payer, owedTo: transaction.payer));
     }
 
     double totalDebts =
@@ -407,8 +403,9 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
             .addAll(transaction.debts.map((x) => createDebtEditor(x)).toList());
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(e.toString())));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(
+                  "Unexpected error occurred parsing receipt. Please ensure entire receipt is visible and legible.")));
         }
       } finally {
         _processingImage = false;
@@ -433,10 +430,9 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
               actions: [
                 Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                    child: FilledButton.icon(
+                    child: FilledButton(
                       onPressed: _processingImage ? null : populateFromReceipt,
-                      label: const Text("Auto-Populate"),
-                      icon: _processingImage
+                      child: _processingImage
                           ? CircularProgressIndicator(
                               color: Theme.of(context).primaryColor,
                               strokeAlign: -1,
@@ -499,7 +495,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
                     ),
                     DropdownButtonFormField<SplitType>(
                       isExpanded: true,
-                      value: _splitType,
+                      initialValue: _splitType,
                       items: SplitType.values
                           .map((SplitType splitType) =>
                               DropdownMenuItem<SplitType>(

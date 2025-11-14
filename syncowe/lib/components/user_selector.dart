@@ -61,7 +61,7 @@ class _UserSelector extends ConsumerState<UserSelector> {
     initUserData();
 
     return DropdownButtonFormField<User>(
-      value: selectedUser,
+      initialValue: selectedUser,
       isExpanded: true,
       items: availableUsers
           .map((user) => DropdownMenuItem<User>(

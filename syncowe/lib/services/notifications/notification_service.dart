@@ -83,9 +83,11 @@ class NotificationService extends _$NotificationService {
       _handleNotification(initialMessage, context);
     }
 
-    // Handle if the app was opened via notification from the background.
-    FirebaseMessaging.onMessageOpenedApp
-        .listen((message) => _handleNotification(message, context));
+    if (context.mounted) {
+      // Handle if the app was opened via notification from the background.
+      FirebaseMessaging.onMessageOpenedApp
+          .listen((message) => _handleNotification(message, context));
+    }
   }
 
   void _handleNotification(RemoteMessage message, BuildContext context) async {
