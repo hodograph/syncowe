@@ -51,7 +51,7 @@ class _TripPage extends ConsumerState<TripPage> {
                   ),
                   actions: [
                     Visibility(
-                        visible: !currentTrip!.isArchived,
+                        visible: !(currentTrip?.isArchived ?? true),
                         child: IconButton(
                             onPressed: () => Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -68,7 +68,7 @@ class _TripPage extends ConsumerState<TripPage> {
                   ],
                 ),
                 floatingActionButton: Visibility(
-                  visible: !currentTrip.isArchived,
+                  visible: !(currentTrip?.isArchived ?? true),
                   child: SpeedDial(
                     icon: Icons.add,
                     activeIcon: Icons.close,

@@ -10,9 +10,8 @@ class DebtEditor extends ConsumerStatefulWidget {
   final Debt debt;
   final Function(DebtEditor) deleteAction;
   final Function(DebtEditor) splitAction;
-  String equation = "0";
 
-  DebtEditor(
+  const DebtEditor(
       {super.key,
       required this.debt,
       required this.deleteAction,
@@ -52,8 +51,6 @@ class _DebtEditor extends ConsumerState<DebtEditor> {
       initialUser: widget.debt.debtor,
     );
 
-    widget.equation = widget.debt.amount.toString();
-
     super.initState();
   }
 
@@ -90,66 +87,84 @@ class _DebtEditor extends ConsumerState<DebtEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-        title: Row(
-      children: [
-        Expanded(
-          child: Column(
-            children: [
-              TextField(
-                controller: _memoController,
-                onChanged: (value) => widget.debt.memo = value,
-                decoration: const InputDecoration(label: Text("Memo")),
-              ),
-              Row(
-                children: [
-                  Expanded(flex: 3, child: _userSelector),
-                  const SizedBox(
-                    width: 15,
-                  ),
-                  Expanded(
-                      flex: 2,
-                      // child: TextField(
-                      //   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      //   controller: amountController,
-                      //   onChanged: (value) => widget.debt.amount = amountController.doubleValue,
-                      //   decoration: const InputDecoration(label: Text("Amount")),
-                      // ),
-                      // child: MathField(
-                      //     keyboardType: MathKeyboardType.expression,
-                      //     variables: const [],
-                      //     decoration: const InputDecoration(
-                      //         label: Text("Amount"),
-                      //         prefix: Icon(Icons.attach_money)),
-                      //     controller: _amountController,
-                      //     onChanged: (value) => widget.equation = value,
-                      //     onSubmitted: (value) => calculateAmount()),
-                      child: CalculatorKeyboardWidget(
-                          controller: _amountController,
-                          decimalPrecision: 2,
-                          onCalculationResult: (value) =>
-                              widget.debt.amount = double.parse(value),
-                          decoration: const InputDecoration(
-                              labelText: "Amount", prefixText: "\$"))),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            IconButton(
-              onPressed: () => widget.deleteAction(widget),
-              icon: const Icon(Icons.delete),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _memoController,
+                    onChanged: (value) => widget.debt.memo = value,
+                    decoration: InputDecoration(
+                      labelText: "Memo",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'delete') {
+                      widget.deleteAction(widget);
+                    } else if (value == 'split') {
+                      widget.splitAction(widget);
+                    }
+                  },
+                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                    const PopupMenuItem<String>(
+                      value: 'split',
+                      child: ListTile(
+                        leading: Icon(Icons.call_split_rounded),
+                        title: Text('Split'),
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'delete',
+                      child: ListTile(
+                        leading: Icon(Icons.delete_outline),
+                        title: Text('Delete'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            IconButton(
-              onPressed: () => widget.splitAction(widget),
-              icon: const Icon(Icons.call_split_rounded),
-            )
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: _userSelector,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 2,
+                  child: CalculatorKeyboardWidget(
+                    controller: _amountController,
+                    decimalPrecision: 2,
+                    onCalculationResult: (value) =>
+                        widget.debt.amount = double.parse(value),
+                    decoration: InputDecoration(
+                      labelText: "Amount",
+                      prefixText: "\$",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
-        )
-      ],
-    ));
+        ),
+      ),
+    );
   }
 }

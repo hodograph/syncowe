@@ -76,99 +76,110 @@ class _AccountPage extends ConsumerState<AccountPage> {
     notificationEnabled = notificationToken?.enabled ?? false;
 
     return Scaffold(
-        body: SafeArea(
-            child: Center(
-                child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                    child: SingleChildScrollView(
-                        primary: false,
-                        child: Column(
-                          children: [
-                            const SizedBox(
-                              height: 25,
-                            ),
-                            const Icon(
-                              Icons.account_circle,
-                              size: 80,
-                            ),
-                            const SizedBox(height: 25),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Invisible button for consistent spacing
-                                const IconButton(
-                                  onPressed: null,
-                                  icon: Icon(Icons.edit),
-                                  disabledColor: Colors.transparent,
-                                  enableFeedback: false,
-                                ),
-                                Text(currentUser?.getDisplayString() ??
-                                    "Unknown"),
-                                IconButton(
-                                    onPressed: () => updateName(currentUser!),
-                                    icon: const Icon(Icons.edit))
-                              ],
-                            ),
-                            const SizedBox(
-                              height: 25,
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text("Notifications: "),
-                                SegmentedButton(
-                                  segments: const [
-                                    ButtonSegment<bool>(
-                                        value: false, label: Text("Off")),
-                                    ButtonSegment<bool>(
-                                        value: true, label: Text("On"))
-                                  ],
-                                  selected: <bool>{notificationEnabled},
-                                  onSelectionChanged: (Set<bool> newSelection) {
-                                    if (!newSelection.first) {
-                                      notificationEnabled = newSelection.first;
-                                      notificationToken!.enabled =
-                                          newSelection.first;
-                                      _userFirestoreService
-                                          .addOrUpdateNotificationToken(
-                                              notificationToken);
-                                    } else {
-                                      notificationService
-                                          .getNotificationToken();
-                                    }
-                                    setState(() {});
-                                  },
-                                ),
-                              ],
-                            ),
-                            const SizedBox(
-                              height: 25,
-                            ),
-                            FilledButton(
-                                onPressed: () => Navigator.of(context)
-                                    .push(MaterialPageRoute(
-                                        builder: (context) => const TripsPage(
-                                              archivedTrips: true,
-                                            ))),
-                                child: const Text("Archived Trips")),
-                            const SizedBox(
-                              height: 25,
-                            ),
-                            const SizedBox(
-                              height: 25,
-                            ),
-                            FilledButton(
-                                onPressed: onPressed,
-                                child: const Text("Log Out")),
-                            const SizedBox(
-                              height: 25,
-                            ),
-                            FilledButton.icon(
-                              onPressed: confirmDelete,
-                              label: const Text("Delete Account"),
-                              icon: const Icon(Icons.delete_forever),
-                            )
-                          ],
-                        ))))));
+      appBar: AppBar(
+        title: const Text('Account'),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.account_circle,
+                    size: 80,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    currentUser?.getDisplayString() ?? "Unknown",
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  Text(
+                    currentUser?.email ?? "",
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () => updateName(currentUser!),
+                    icon: const Icon(Icons.edit),
+                    label: const Text("Edit Name"),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.notifications),
+                  title: const Text("Notifications"),
+                  trailing: Switch(
+                    value: notificationEnabled,
+                    onChanged: (bool value) {
+                      if (!value) {
+                        notificationEnabled = value;
+                        notificationToken!.enabled = value;
+                        _userFirestoreService
+                            .addOrUpdateNotificationToken(notificationToken);
+                      } else {
+                        notificationService.getNotificationToken();
+                      }
+                      setState(() {});
+                    },
+                  ),
+                ),
+                const Divider(height: 0),
+                ListTile(
+                  leading: const Icon(Icons.archive),
+                  title: const Text("Archived Trips"),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => const TripsPage(
+                            archivedTrips: true,
+                          ))),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Icon(
+                    Icons.logout,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  title: Text(
+                    "Log Out",
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                  onTap: onPressed,
+                ),
+                const Divider(height: 0),
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_forever,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  title: Text(
+                    "Delete Account",
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                  onTap: confirmDelete,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

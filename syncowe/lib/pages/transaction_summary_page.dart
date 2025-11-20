@@ -1,4 +1,3 @@
-import 'package:currency_textfield/currency_textfield.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,73 +20,6 @@ class TransactionSummaryPage extends ConsumerStatefulWidget {
 }
 
 class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
-  final List<Color> colorArray = const [
-    Color(0xFFFF6633),
-    Color(0xFFFFB399),
-    Color(0xFFFF33FF),
-    Color(0xFFFFFF99),
-    Color(0xFF00B3E6),
-    Color(0xFFE6B333),
-    Color(0xFF3366E6),
-    Color(0xFF999966),
-    Color(0xFF99FF99),
-    Color(0xFFB34D4D),
-    Color(0xFF80B300),
-    Color(0xFF809900),
-    Color(0xFFE6B3B3),
-    Color(0xFF6680B3),
-    Color(0xFF66991A),
-    Color(0xFFFF99E6),
-    Color(0xFFCCFF1A),
-    Color(0xFFFF1A66),
-    Color(0xFFE6331A),
-    Color(0xFF33FFCC),
-    Color(0xFF66994D),
-    Color(0xFFB366CC),
-    Color(0xFF4D8000),
-    Color(0xFFB33300),
-    Color(0xFFCC80CC),
-    Color(0xFF66664D),
-    Color(0xFF991AFF),
-    Color(0xFFE666FF),
-    Color(0xFF4DB3FF),
-    Color(0xFF1AB399),
-    Color(0xFFE666B3),
-    Color(0xFF33991A),
-    Color(0xFFCC9999),
-    Color(0xFFB3B31A),
-    Color(0xFF00E680),
-    Color(0xFF4D8066),
-    Color(0xFF809980),
-    Color(0xFFE6FF80),
-    Color(0xFF1AFF33),
-    Color(0xFF999933),
-    Color(0xFFFF3380),
-    Color(0xFFCCCC00),
-    Color(0xFF66E64D),
-    Color(0xFF4D80CC),
-    Color(0xFF9900B3),
-    Color(0xFFE64D66),
-    Color(0xFF4DB380),
-    Color(0xFFFF4D4D),
-    Color(0xFF99E6E6),
-    Color(0xFF6666FF)
-  ];
-
-  TextField createCurrencyTextField(double amount) {
-    return TextField(
-      readOnly: true,
-      controller: CurrencyTextFieldController(
-          currencySymbol: '\$',
-          thousandSymbol: ',',
-          decimalSymbol: '.',
-          enableNegative: false,
-          showZeroValue: true,
-          initDoubleValue: amount),
-      decoration: const InputDecoration(border: InputBorder.none),
-    );
-  }
-
   Future<void> deleteTransaction() async {
     var tripFirestoreService = ref.read(tripFirestoreServiceProvider.notifier);
     String? tripId = ref.watch(currentTripIdProvider);
@@ -124,8 +56,16 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
     Transaction? currentTransaction = ref.watch(currentTransactionProvider);
     Map<String, User> users = ref.watch(tripUsersProvider);
 
+    if (currentTransaction == null) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     List<String> userIds =
-        currentTransaction!.calculatedDebts.map((x) => x.debtor).toList();
+        currentTransaction.calculatedDebts.map((x) => x.debtor).toList();
 
     Map<String, List<CalculatedDebtSummaryEntry>> debtSummaries = {
       for (var calculatedDebt in currentTransaction.calculatedDebts)
@@ -137,92 +77,152 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
         calculatedDebt.debtor: calculatedDebt.amount
     };
 
-    List<PieChartSectionData> data = <PieChartSectionData>[];
-    int counter = 0;
+    List<Color> pieChartColors = [
+      Theme.of(context).colorScheme.primary,
+      Theme.of(context).colorScheme.secondary,
+      Theme.of(context).colorScheme.tertiary,
+      Theme.of(context).colorScheme.error,
+      Theme.of(context).colorScheme.surfaceVariant,
+    ];
 
+    List<PieChartSectionData> data = <PieChartSectionData>[];
+    int colorIndex = 0;
     for (MapEntry<String, double> debt in debts.entries) {
       data.add(PieChartSectionData(
           value: debt.value,
-          color: colorArray[counter % colorArray.length],
-          showTitle: false));
-      counter++;
+          color: pieChartColors[colorIndex % pieChartColors.length],
+          title:
+              '${(debt.value / currentTransaction.total * 100).toStringAsFixed(1)}%',
+          radius: 80,
+          titleStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+              )));
+      colorIndex++;
     }
 
     DateTime createdDate = currentTransaction.createdDate as DateTime;
 
-    return SafeArea(
-        child: Scaffold(
-            appBar: AppBar(
-              title: Text(currentTransaction.transactionName),
-              centerTitle: true,
-              actions: [
-                Visibility(
-                  visible: !currentTrip!.isArchived,
-                  child: IconButton(
-                      onPressed: deleteTransaction,
-                      icon: const Icon(Icons.delete_forever)),
-                ),
-                Visibility(
-                    visible: !currentTrip.isArchived,
-                    child: IconButton(
-                        onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    const EditTransactionForm())),
-                        icon: const Icon(Icons.edit)))
-              ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(currentTransaction.transactionName),
+        centerTitle: true,
+        actions: [
+          Visibility(
+            visible: !currentTrip!.isArchived,
+            child: IconButton(
+                onPressed: deleteTransaction,
+                icon: const Icon(Icons.delete_forever)),
+          ),
+          Visibility(
+              visible: !currentTrip.isArchived,
+              child: IconButton(
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => const EditTransactionForm())),
+                  icon: const Icon(Icons.edit)))
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          Card(
+            margin: const EdgeInsets.only(bottom: 16.0),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    currentTransaction.transactionName,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Total: ${NumberFormat.currency(locale: "en_US", symbol: "\$").format(currentTransaction.total)}",
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  Text(
+                    "Paid by: ${users[currentTransaction.payer]!.getDisplayString()}",
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  Text(
+                    "Date submitted: ${DateFormat.yMMMd().format(createdDate)}",
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
             ),
-            body: Column(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: PieChart(PieChartData(sections: data)),
-                ),
-                const SizedBox(
-                  height: 15,
-                ),
-                Center(
-                    child: Text(
-                        "Total: \$${currentTransaction.total.toStringAsFixed(2)}")),
-                Center(
-                    child: Text(
-                        "Paid by: ${users[currentTransaction.payer]!.getDisplayString()}")),
-                Center(
-                    child: Text(
-                        "Date submitted: ${DateFormat.yMMMd().format(createdDate)}")),
-                const Divider(),
-                Expanded(
-                    flex: 8,
-                    child: ListView.builder(
-                        itemCount: debts.length,
-                        shrinkWrap: true,
-                        itemBuilder: (context, index) {
-                          String user = userIds[index];
-                          List<Widget> summaryWidgets = [];
+          ),
+          Card(
+            margin: const EdgeInsets.only(bottom: 16.0),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 200,
+                    child: PieChart(PieChartData(sections: data)),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8.0,
+                    runSpacing: 4.0,
+                    children: List.generate(debts.length, (index) {
+                      String userId = userIds[index];
+                      User user = users[userId]!;
+                      return Chip(
+                        avatar: CircleAvatar(
+                          backgroundColor:
+                              pieChartColors[index % pieChartColors.length],
+                        ),
+                        label: Text(user.getDisplayString()),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Card(
+            child: Column(
+              children: List.generate(debts.length, (index) {
+                String user = userIds[index];
+                List<Widget> summaryWidgets = [];
 
-                          for (CalculatedDebtSummaryEntry debtSummaryEntry
-                              in debtSummaries[user]!) {
-                            summaryWidgets.add(ListTile(
-                                title: Text(debtSummaryEntry.memo),
-                                subtitle: createCurrencyTextField(
-                                    debtSummaryEntry.amount)));
-                          }
+                for (CalculatedDebtSummaryEntry debtSummaryEntry
+                    in debtSummaries[user]!) {
+                  summaryWidgets.add(ListTile(
+                    title: Text(debtSummaryEntry.memo),
+                    trailing: Text(
+                      NumberFormat.currency(locale: "en_US", symbol: "\$")
+                          .format(debtSummaryEntry.amount),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ));
+                }
 
-                          return ExpansionTile(
-                            title: Text(
-                                users[user]!.displayName ?? users[user]!.email),
-                            subtitle: createCurrencyTextField(debts[user]!),
-                            leading: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: BoxDecoration(
-                                  shape: BoxShape.rectangle,
-                                  color: colorArray[index % colorArray.length]),
-                            ),
-                            children: summaryWidgets,
-                          );
-                        }))
-              ],
-            )));
+                return ExpansionTile(
+                  title: Text(users[user]!.getDisplayString()),
+                  subtitle: Text(
+                    NumberFormat.currency(locale: "en_US", symbol: "\$")
+                        .format(debts[user]!),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor:
+                        pieChartColors[index % pieChartColors.length],
+                  ),
+                  children: summaryWidgets,
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

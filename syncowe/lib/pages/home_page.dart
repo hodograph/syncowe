@@ -15,20 +15,18 @@ class HomePage extends ConsumerStatefulWidget{
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends ConsumerState<HomePage>
-{
+class _HomePageState extends ConsumerState<HomePage> {
   int currentPageIndex = 1;
 
   @override
-  void initState()
-  {
+  void initState() {
     initUserData();
     super.initState();
   }
 
-  Future<void> initUserData() async
-  {
-    NotificationService notificationService = ref.read(notificationServiceProvider.notifier);
+  Future<void> initUserData() async {
+    NotificationService notificationService =
+        ref.read(notificationServiceProvider.notifier);
     notificationService.initNotificationListening(context);
     await notificationService.getNotificationToken();
   }
@@ -44,23 +42,48 @@ class _HomePageState extends ConsumerState<HomePage>
     ref.watch(currentUserProvider);
     ref.watch(notificationServiceProvider);
 
+    final destinations = const <Widget>[
+      NavigationDestination(
+          icon: Icon(Icons.notifications_outlined),
+          selectedIcon: Icon(Icons.notifications),
+          label: 'Notifications'),
+      NavigationDestination(
+          icon: Icon(Icons.airplane_ticket_outlined),
+          selectedIcon: Icon(Icons.airplane_ticket),
+          label: 'Trips'),
+      NavigationDestination(
+          icon: Icon(Icons.account_circle_outlined),
+          selectedIcon: Icon(Icons.account_circle),
+          label: 'Me')
+    ];
+
+    final pages = <Widget>[
+      const NotificationsPage(),
+      const TripsPage(),
+      const AccountPage()
+    ];
+
     return Scaffold(
-      bottomNavigationBar: NavigationBar(onDestinationSelected: (int index) {
-        setState(() {
-          currentPageIndex = index;
-        });
-      },
-      selectedIndex: currentPageIndex,
-      destinations: const <Widget>[
-        NavigationDestination(icon: Icon(Icons.notifications), label: 'Notifications'),
-        NavigationDestination(icon: Icon(Icons.airplane_ticket), label: 'Trips'),
-        NavigationDestination(icon: Icon(Icons.account_circle), label: 'Me')
-      ]),
-      body: <Widget>[
-        const NotificationsPage(),
-        const TripsPage(),
-        const AccountPage()
-      ][currentPageIndex]
-    );
+        bottomNavigationBar: NavigationBar(
+          onDestinationSelected: (int index) {
+            setState(() {
+              currentPageIndex = index;
+            });
+          },
+          indicatorColor: Theme.of(context).colorScheme.primaryContainer,
+          indicatorShape: const CircleBorder(),
+          selectedIndex: currentPageIndex,
+          destinations: destinations,
+        ),
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: pages[currentPageIndex],
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+        ));
   }
 }

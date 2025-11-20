@@ -82,53 +82,57 @@ class _EditTripForm extends ConsumerState<EditTripForm> {
         appBar: AppBar(
           title: Text("${currentTrip == null ? "Create" : "Edit"} Trip"),
           centerTitle: true,
+          actions: [
+            if (currentTrip != null)
+              IconButton(
+                icon: const Icon(Icons.archive),
+                onPressed: archiveTrip,
+              ),
+          ],
         ),
-        body: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25.0),
-            child: SingleChildScrollView(
-                primary: false,
+        body: ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            Card(
+              margin: const EdgeInsets.only(bottom: 16.0),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(
-                      height: 15,
-                    ),
                     TextField(
                       controller: _nameController,
-                      decoration:
-                          const InputDecoration(label: Text("Trip Name")),
-                    ),
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    UserManager(
-                        onChange: (users) => setState(() {
-                              _users = users.map((x) => x.id).toList();
-                            }),
-                        users: _users),
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    Center(
-                        child: Column(children: [
-                      TextButton(
-                          onPressed: () => updateTrip(),
-                          child: Text(
-                              "${currentTrip == null ? "Create" : "Update"} Trip")),
-                      SizedBox(
-                        height: 30,
+                      decoration: InputDecoration(
+                        labelText: "Trip Name",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      Visibility(
-                        visible: currentTrip != null,
-                        child: FilledButton(
-                            onPressed: () => archiveTrip(),
-                            style: TextButton.styleFrom(
-                                backgroundColor: Colors.red),
-                            child: Text("Archive")),
-                      )
-                    ]))
+                      textCapitalization: TextCapitalization.sentences,
+                    ),
                   ],
-                ))),
+                ),
+              ),
+            ),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: UserManager(
+                    onChange: (users) => setState(() {
+                          _users = users.map((x) => x.id).toList();
+                        }),
+                    users: _users),
+              ),
+            ),
+            const SizedBox(
+              height: 75,
+            )
+          ],
+        ),
+        floatingActionButton: FilledButton.icon(
+          onPressed: updateTrip,
+          icon: const Icon(Icons.check),
+          label: Text("${currentTrip == null ? "Create" : "Update"} Trip"),
+        ),
       ),
     );
   }

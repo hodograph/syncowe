@@ -76,7 +76,12 @@ class _UserSelector extends ConsumerState<UserSelector> {
         selectedUser = option;
         widget.onSelectedUserChanged(option);
       }),
-      decoration: InputDecoration(label: Text(widget.label)),
+      decoration: InputDecoration(
+        label: Text(widget.label),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 }

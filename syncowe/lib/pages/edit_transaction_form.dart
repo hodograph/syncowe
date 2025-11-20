@@ -260,23 +260,6 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
     }
   }
 
-  bool calculateAmount(DebtEditor debt) {
-    bool successfullyCalculated = false;
-    try {
-      double value = TeXParser(debt.equation)
-          .parse()
-          .evaluate(EvaluationType.REAL, ContextModel());
-      debt.debt.amount = value;
-      successfullyCalculated = true;
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Amount could not be parsed.")));
-      successfullyCalculated = false;
-    }
-
-    return successfullyCalculated;
-  }
-
   bool calculateTotal() {
     bool successfullyCalculated = false;
 
@@ -298,12 +281,6 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
     }
 
     return successfullyCalculated;
-  }
-
-  bool parseDebts() {
-    List<bool> parsed = _debts.map((x) => calculateAmount(x)).toList();
-
-    return !parsed.contains(false);
   }
 
   Future<void> submitTransaction() async {
@@ -421,136 +398,137 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
     return PopScope(
       child: SafeArea(
         child: CalculatorKeyboardInsetsWidget(
-          // Wrap with our new insets widget
           child: Scaffold(
             appBar: AppBar(
               title: Text(
                   "${transactionId == null ? "Create" : "Edit"} Transaction"),
               centerTitle: true,
               actions: [
-                Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                    child: FilledButton(
-                      onPressed: _processingImage ? null : populateFromReceipt,
-                      child: _processingImage
-                          ? CircularProgressIndicator(
-                              color: Theme.of(context).primaryColor,
-                              strokeAlign: -1,
-                            )
-                          : const Icon(Icons.camera_alt),
-                    ))
+                IconButton(
+                  onPressed: _processingImage ? null : populateFromReceipt,
+                  icon: _processingImage
+                      ? CircularProgressIndicator(
+                          color: Theme.of(context).colorScheme.primary,
+                          strokeWidth: 2,
+                        )
+                      : const Icon(Icons.camera_alt),
+                ),
               ],
             ),
-            resizeToAvoidBottomInset:
-                false, // Important for custom keyboard handling
-            body: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                          label: Text("Transaction Name")),
-                      textCapitalization: TextCapitalization.sentences,
+            resizeToAvoidBottomInset: false,
+            body: ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                Card(
+                  margin: const EdgeInsets.only(bottom: 16.0),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: "Transaction Name",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          textCapitalization: TextCapitalization.sentences,
+                        ),
+                        const SizedBox(height: 16),
+                        UserSelector(
+                            onSelectedUserChanged: (user) {
+                              setState(() {
+                                _payer = user?.id ?? "";
+                              });
+                            },
+                            label: "Payer",
+                            initialUser: _payer),
+                        const SizedBox(height: 16),
+                        CalculatorKeyboardWidget(
+                          decoration: InputDecoration(
+                            labelText: "Total",
+                            prefixText: "\$",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          decimalPrecision: 2,
+                          controller: _totalAmountController,
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<SplitType>(
+                          isExpanded: true,
+                          initialValue: _splitType,
+                          items: SplitType.values
+                              .map((SplitType splitType) =>
+                                  DropdownMenuItem<SplitType>(
+                                      value: splitType,
+                                      child: Text(splitType.name)))
+                              .toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _splitType = value;
+                              });
+                            }
+                          },
+                          decoration: InputDecoration(
+                            labelText: "Remainder Split Method",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    UserSelector(
-                        onSelectedUserChanged: (user) {
-                          setState(() {
-                            _payer = user?.id ?? "";
-                          });
-                        },
-                        label: "Payer",
-                        initialUser: _payer),
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    // TextField(
-                    //   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    //   controller: _totalAmountController,
-                    //   decoration: const InputDecoration(label: Text("Total")),
-                    // ),
-                    // MathField(
-                    //   keyboardType: MathKeyboardType.expression,
-                    //   variables: const [],
-                    //   decoration: const InputDecoration(
-                    //       label: Text("Total"),
-                    //       prefix: Icon(Icons.attach_money)),
-                    //   controller: _totalAmountController,
-                    //   onSubmitted: (value) => calculateTotal(),
-                    // ),
-                    CalculatorKeyboardWidget(
-                      decoration: const InputDecoration(
-                        labelText: "Total",
-                        prefixText: "\$",
-                      ),
-                      decimalPrecision: 2,
-                      controller: _totalAmountController,
-                    ),
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    DropdownButtonFormField<SplitType>(
-                      isExpanded: true,
-                      initialValue: _splitType,
-                      items: SplitType.values
-                          .map((SplitType splitType) =>
-                              DropdownMenuItem<SplitType>(
-                                  value: splitType,
-                                  child: Text(splitType.name)))
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _splitType = value;
-                          });
-                        }
-                      },
-                      decoration: const InputDecoration(
-                          label: Text("Remainder Split Method")),
-                    ),
-
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    const Divider(),
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text("Debts"),
-                          OutlinedButton.icon(
-                            onPressed: addDebt,
-                            label: const Text("Add Debt"),
-                            icon: const Icon(Icons.add),
-                          )
-                        ]),
-                    ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _debts.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == _debts.length) {
-                            return const SizedBox(
-                              height:
-                                  75, // Space for the floating action button
-                            );
-                          }
-                          return _debts[index];
-                        }),
-                  ],
+                  ),
                 ),
-              ),
+                Card(
+                  margin: const EdgeInsets.only(bottom: 16.0),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Debts",
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            FilledButton.icon(
+                              onPressed: addDebt,
+                              label: const Text("Add Debt"),
+                              icon: const Icon(Icons.add),
+                            )
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _debts.length,
+                            itemBuilder: (context, index) {
+                              return _debts[index];
+                            }),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 75, // Space for the floating action button
+                ),
+              ],
             ),
             floatingActionButton: FilledButton.icon(
               onPressed: _submittingTransaction ? null : submitTransaction,
               label: const Text("Submit"),
               icon: _submittingTransaction
                   ? CircularProgressIndicator(
-                      color: Theme.of(context).primaryColor,
-                      strokeAlign: -1,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      strokeWidth: 2,
                     )
                   : const Icon(Icons.navigate_next_rounded),
             ),
@@ -558,25 +536,23 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
         ),
       ),
       onPopInvokedWithResult: (didPop, result) {
+        // If pop was prevented by CalculatorKeyboardInsetsWidget or similar,
+        // ensure we manually pop if necessary or handle state.
+        // For now, assuming default behavior or that it's handled.
+        // If using a custom keyboard that traps back button, this might need more logic.
+        // However, our keyboard is an overlay, so system back should work.
+        // If `didPop` is false, it means something else prevented the pop.
+        // If `didPop` is true, it means the pop happened.
+        // The `PopScope` is mainly to handle system back gestures.
+        // If the keyboard is open and user hits system back, we might want to close keyboard first.
+        // For now, this is okay.
+        // The original onPopInvokedWithResult was:
+        // if (!didPop) {
+        //   Navigator.of(context).pop();
+        // }
+        // Leaving this in here after changing to custom keyboard because we copied logic from the math keyboard.
         if (!didPop) {
-          // If pop was prevented by CalculatorKeyboardInsetsWidget or similar,
-          // ensure we manually pop if necessary or handle state.
-          // For now, assuming default behavior or that it's handled.
-          // If using a custom keyboard that traps back button, this might need more logic.
-          // However, our keyboard is an overlay, so system back should work.
-          // If `didPop` is false, it means something else prevented the pop.
-          // If `didPop` is true, it means the pop happened.
-          // The `PopScope` is mainly to handle system back gestures.
-          // If the keyboard is open and user hits system back, we might want to close keyboard first.
-          // For now, this is okay.
-          // The original onPopInvokedWithResult was:
-          // if (!didPop) {
-          //   Navigator.of(context).pop();
-          // }
-          // This seems to force a pop if it was prevented. Let's keep it.
-          if (!didPop) {
-            Navigator.of(context).pop();
-          }
+          Navigator.of(context).pop();
         }
       },
     );
