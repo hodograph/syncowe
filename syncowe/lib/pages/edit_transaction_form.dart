@@ -289,7 +289,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
     String? currentTransactionId = ref.watch(currentTransactionIdProvider);
 
     String? error;
-    if (calculateTotal() && parseDebts()) {
+    if (calculateTotal()) {
       if (_nameController.text.isNotEmpty) {
         if (_payer?.isNotEmpty ?? false) {
           if (_debts.isNotEmpty) {
