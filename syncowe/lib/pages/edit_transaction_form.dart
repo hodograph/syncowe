@@ -311,6 +311,11 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
                       await _tripFirestoreService.addOrUpdateTransaction(
                           transaction, currentTripId!, currentTransactionId);
 
+                  // Invalidate the loaded transactions cache to force a refresh
+                  ref.invalidate(loadedTransactionsProvider);
+                  // Invalidate the current transaction to force refetch
+                  ref.invalidate(currentTransactionAsyncProvider);
+
                   _submittingTransaction = false;
                   setState(() {});
 

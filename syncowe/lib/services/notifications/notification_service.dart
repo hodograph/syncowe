@@ -43,7 +43,11 @@ class NotificationService extends _$NotificationService {
     } else if (Platform.isIOS) {
       final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
       if (apnsToken == null) {
-        return;
+        await Future.delayed(const Duration(seconds: 3));
+        final retryToken = await FirebaseMessaging.instance.getAPNSToken();
+        if (retryToken == null && kDebugMode) {
+          debugPrint('APNS token is null after retry');
+        }
       }
     }
 
