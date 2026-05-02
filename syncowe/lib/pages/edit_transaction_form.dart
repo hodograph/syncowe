@@ -360,7 +360,7 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
   }
 
   Future<void> populateFromReceipt() async {
-    FilePickerResult? result = await FilePicker.platform
+    FilePickerResult? result = await FilePicker
         .pickFiles(type: FileType.image, withData: true);
 
     if (result != null) {

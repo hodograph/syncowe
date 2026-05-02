@@ -1,9 +1,8 @@
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncowe/models/user.dart';
 import 'package:syncowe/pages/trips_page.dart';
-import 'package:syncowe/services/auth/auth_service.dart';
-import 'package:syncowe/services/auth/current_user.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
 import 'package:syncowe/services/notifications/notification_service.dart';
 
@@ -17,11 +16,6 @@ class AccountPage extends ConsumerStatefulWidget {
 class _AccountPage extends ConsumerState<AccountPage> {
   final UserFirestoreService _userFirestoreService = UserFirestoreService();
   bool notificationEnabled = false;
-
-  void onPressed() {
-    final authService = ref.read(authServiceProvider.notifier);
-    authService.signOut();
-  }
 
   Future<void> confirmDelete() async {
     bool? confirmed = await showDialog<bool>(
@@ -69,7 +63,6 @@ class _AccountPage extends ConsumerState<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    User? currentUser = ref.watch(currentUserProvider);
 
     final notificationService = ref.read(notificationServiceProvider.notifier);
     final notificationToken = ref.watch(notificationServiceProvider);
@@ -80,106 +73,77 @@ class _AccountPage extends ConsumerState<AccountPage> {
         title: const Text('Account'),
         centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
+      body: ProfileScreen(
+        actions: [
+          SignedOutAction((context) {
+            // AuthGate will handle navigation after sign-out.
+            // Pop all routes until the first one.
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }),
+          AccountDeletedAction((context, user) async {
+            // This callback is after Firebase Auth user is deleted.
+            // Now, delete the corresponding Firestore document.
+            if (!user.isAnonymous) {
+              try {
+                await confirmDelete();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Account data removed from our records.'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Error removing account data: ${e.toString()}',
+                      ),
+                    ),
+                  );
+                }
+              }
+            }
+            // AuthGate will handle navigation.
+            if (mounted) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+          }),
+        ],
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.account_circle,
-                    size: 80,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    currentUser?.getDisplayString() ?? "Unknown",
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text(
-                    currentUser?.email ?? "",
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () => updateName(currentUser!),
-                    icon: const Icon(Icons.edit),
-                    label: const Text("Edit Name"),
-                  ),
-                ],
-              ),
+          SizedBox(height: 15,),
+          Text("Personal",style: Theme.of(context).textTheme.titleMedium),
+          ListTile(
+            leading: const Icon(Icons.notifications),
+            title: const Text("Notifications"),
+            trailing: Switch(
+              value: notificationEnabled,
+              onChanged: (bool value) {
+                if (!value) {
+                  notificationEnabled = value;
+                  notificationToken!.enabled = value;
+                  _userFirestoreService
+                      .addOrUpdateNotificationToken(notificationToken);
+                } else {
+                  notificationService.getNotificationToken();
+                }
+                setState(() {});
+              },
             ),
           ),
-          const SizedBox(height: 16),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.notifications),
-                  title: const Text("Notifications"),
-                  trailing: Switch(
-                    value: notificationEnabled,
-                    onChanged: (bool value) {
-                      if (!value) {
-                        notificationEnabled = value;
-                        notificationToken!.enabled = value;
-                        _userFirestoreService
-                            .addOrUpdateNotificationToken(notificationToken);
-                      } else {
-                        notificationService.getNotificationToken();
-                      }
-                      setState(() {});
-                    },
-                  ),
-                ),
-                const Divider(height: 0),
-                ListTile(
-                  leading: const Icon(Icons.archive),
-                  title: const Text("Archived Trips"),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => const TripsPage(
-                            archivedTrips: true,
-                          ))),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: Icon(
-                    Icons.logout,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  title: Text(
-                    "Log Out",
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error),
-                  ),
-                  onTap: onPressed,
-                ),
-                const Divider(height: 0),
-                ListTile(
-                  leading: Icon(
-                    Icons.delete_forever,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  title: Text(
-                    "Delete Account",
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error),
-                  ),
-                  onTap: confirmDelete,
-                ),
-              ],
-            ),
+          const Divider(height: 0),
+          ListTile(
+            leading: const Icon(Icons.archive),
+            title: const Text("Archived Trips"),
+            trailing: const Icon(Icons.arrow_forward_ios_rounded),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) => const TripsPage(
+                      archivedTrips: true,
+                    ))),
           ),
         ],
-      ),
+      )
     );
   }
 }
