@@ -7,7 +7,7 @@ part of 'current_transaction.dart';
 // **************************************************************************
 
 String _$currentTransactionHash() =>
-    r'1c3bda3b326071de1e76e5b7cc2224ccd36323e9';
+    r'f0e5bee6f1f68d17ee8f23b23ac9eff741311180';
 
 /// See also [currentTransaction].
 @ProviderFor(currentTransaction)
@@ -22,11 +22,9 @@ final currentTransactionProvider =
   allTransitiveDependencies: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef CurrentTransactionRef = AutoDisposeProviderRef<syncowe.Transaction?>;
+typedef CurrentTransactionRef = Ref<syncowe.Transaction?>;
 String _$currentTransactionAsyncHash() =>
-    r'0354e3d94f08ac29412f2a82f7a8881f07b10133';
+    r'4b32c9b433e7e4d9fe7f8a84ac853d3cd52bdd0b';
 
 /// See also [currentTransactionAsync].
 @ProviderFor(currentTransactionAsync)
@@ -41,10 +39,8 @@ final currentTransactionAsyncProvider =
   allTransitiveDependencies: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
 typedef CurrentTransactionAsyncRef
-    = AutoDisposeFutureProviderRef<syncowe.Transaction?>;
+    = Ref<syncowe.Transaction?>;
 String _$currentTransactionIdHash() =>
     r'aace63ed3effe7e3d51f13e3da7515b4f381affe';
 
@@ -81,4 +77,4 @@ final loadedTransactionsProvider = AutoDisposeNotifierProvider<
 typedef _$LoadedTransactions
     = AutoDisposeNotifier<Map<String, syncowe.Transaction>?>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

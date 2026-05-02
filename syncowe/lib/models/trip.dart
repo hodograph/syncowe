@@ -17,6 +17,11 @@ class Trip {
 
   bool isArchived;
 
+  bool isOneOff;
+
+  /// Named participants for one-off trips. Maps generated ID -> display name.
+  final Map<String, String> namedUsers;
+
   @JsonKey(
       toJson: ServerTimestampConverter.toJson,
       fromJson: ServerTimestampConverter.fromJson)
@@ -27,6 +32,8 @@ class Trip {
       required this.owner,
       this.sharedWith = const <String>[],
       this.isArchived = false,
+      this.isOneOff = false,
+      this.namedUsers = const <String, String>{},
       Object? createdDate})
       : createdDate = createdDate ?? FieldValue.serverTimestamp();
 

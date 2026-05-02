@@ -54,7 +54,7 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
   Widget build(BuildContext context) {
     Trip? currentTrip = ref.watch(currentTripProvider);
     Transaction? currentTransaction = ref.watch(currentTransactionProvider);
-    Map<String, User> users = ref.watch(tripUsersProvider);
+    Map<String, User> users = ref.watch(tripAllUsersProvider);
 
     if (currentTransaction == null) {
       return const Scaffold(

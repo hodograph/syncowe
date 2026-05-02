@@ -116,6 +116,63 @@ Map<String, User> tripUsers(Ref ref) {
 }
 
 @riverpod
+Map<String, User> tripAllUsers(Ref ref) {
+  final firebaseUsers = Map<String, User>.from(ref.watch(tripUsersProvider));
+  final namedUsers = ref.watch(currentTripProvider)?.namedUsers ?? {};
+
+  for (final entry in namedUsers.entries) {
+    firebaseUsers[entry.key] = User(
+      id: entry.key,
+      displayName: entry.value,
+      email: entry.value,
+      picture: null,
+    );
+  }
+  return firebaseUsers;
+}
+
+@riverpod
+Map<String, Trip> regularTrips(Ref ref) {
+  return Map.fromEntries(
+    ref.watch(tripsProvider).entries.where((e) => !e.value.isOneOff),
+  );
+}
+
+@riverpod
+Stream<QuerySnapshot<Object?>> oneOffTripsStream(Ref ref) {
+  TripFirestoreService tripFirestoreService =
+      ref.read(tripFirestoreServiceProvider.notifier);
+  return tripFirestoreService.listenToOneOffTrips();
+}
+
+@riverpod
+class OneOffTrips extends _$OneOffTrips {
+  @override
+  Map<String, Trip> build() {
+    var trips = ref.listen(oneOffTripsStreamProvider, setTrips);
+
+    switch (trips) {
+      case AsyncData(:final value):
+        {
+          return {for (var v in value.docs) v.id: v.data() as Trip};
+        }
+    }
+
+    return {};
+  }
+
+  void setTrips(AsyncValue<QuerySnapshot<Object?>>? oldValue,
+      AsyncValue<QuerySnapshot<Object?>> newValue) {
+    switch (newValue) {
+      case AsyncData(:final value):
+        {
+          state = {for (var v in value.docs) v.id: v.data() as Trip};
+        }
+    }
+  }
+}
+
+@riverpod
 Stream<QuerySnapshot<Object?>> tripUsersStream(Ref ref) {
   Trip? currentTrip = ref.watch(currentTripProvider);
   UserFirestoreService userFirestoreService =

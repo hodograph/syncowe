@@ -7,7 +7,7 @@ part of 'notification_service.dart';
 // **************************************************************************
 
 String _$notificationServiceHash() =>
-    r'f8bff8f4d0fa92d690fc4dcfb53ec3256f4e929e';
+    r'ca3647c3959eee6ff8b9d75a7639d0abf2da0e76';
 
 /// See also [NotificationService].
 @ProviderFor(NotificationService)
@@ -24,4 +24,4 @@ final notificationServiceProvider = AutoDisposeNotifierProvider<
 
 typedef _$NotificationService = AutoDisposeNotifier<NotificationToken?>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

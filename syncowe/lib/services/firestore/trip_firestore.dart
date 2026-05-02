@@ -31,6 +31,15 @@ class TripFirestoreService extends _$TripFirestoreService {
         .snapshots();
   }
 
+  Stream<QuerySnapshot> listenToOneOffTrips({bool archived = false}) {
+    return _trips
+        .where(NameofTrip.fieldSharedWith,
+            arrayContains: _firebaseAuth.currentUser!.uid)
+        .where(NameofTrip.fieldIsArchived, isEqualTo: archived)
+        .where(NameofTrip.fieldIsOneOff, isEqualTo: true)
+        .snapshots();
+  }
+
   Stream<Trip?> listenToTrip(String id) {
     return _trips
         .doc(id)
@@ -54,11 +63,13 @@ class TripFirestoreService extends _$TripFirestoreService {
     return _trips.doc(id);
   }
 
-  Future<void> addOrUpdateTrip(Trip trip, String? id) async {
+  Future<String> addOrUpdateTrip(Trip trip, String? id) async {
     if (id == null) {
-      await _trips.add(trip);
+      final doc = await _trips.add(trip);
+      return doc.id;
     } else {
       await _trips.doc(id).set(trip);
+      return id;
     }
   }
 

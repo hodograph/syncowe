@@ -6,7 +6,7 @@ part of 'current_user.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$currentUserStreamHash() => r'5822f49e295c8ad0c8bd6b0649ed765f3ca690b0';
+String _$currentUserStreamHash() => r'cc8336a181454bf1d69a42eea2a6db3e1ba0bc2a';
 
 /// See also [currentUserStream].
 @ProviderFor(currentUserStream)
@@ -20,11 +20,9 @@ final currentUserStreamProvider = AutoDisposeStreamProvider<User?>.internal(
   allTransitiveDependencies: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef CurrentUserStreamRef = AutoDisposeStreamProviderRef<User?>;
+typedef CurrentUserStreamRef = Ref<User?>;
 String _$currentFireAuthUserHash() =>
-    r'ca0a9f11800f4d8e68897870701a7722a9a52479';
+    r'7e6135522e3efd1d12ba82e0b365ca4005ae0b54';
 
 /// See also [currentFireAuthUser].
 @ProviderFor(currentFireAuthUser)
@@ -39,9 +37,7 @@ final currentFireAuthUserProvider =
   allTransitiveDependencies: null,
 );
 
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef CurrentFireAuthUserRef = AutoDisposeStreamProviderRef<fireauth.User?>;
+typedef CurrentFireAuthUserRef = Ref<fireauth.User?>;
 String _$currentUserHash() => r'58a3d22287f505137771e7586ea91567ca4786a8';
 
 /// See also [CurrentUser].
@@ -58,4 +54,4 @@ final currentUserProvider =
 
 typedef _$CurrentUser = AutoDisposeNotifier<User?>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

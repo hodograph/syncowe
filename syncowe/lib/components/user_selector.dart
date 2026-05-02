@@ -31,14 +31,22 @@ class _UserSelector extends ConsumerState<UserSelector> {
     bool updated = false;
 
     if (widget.initialUser?.isNotEmpty ?? false) {
-      // Only update user if id is new or user was not previously set.
       if (selectedUser == null) {
-        var futureSelectedUser =
-            await _userFirestoreService.getUser(widget.initialUser!);
+        // Check named/trip users first before hitting Firestore.
+        final allUsers = ref.read(tripAllUsersProvider);
+        final found = allUsers[widget.initialUser!];
 
-        selectedUser = futureSelectedUser;
-        _userInitialized = true;
-        updated = true;
+        if (found != null) {
+          selectedUser = found;
+          _userInitialized = true;
+          updated = true;
+        } else {
+          final fetched =
+              await _userFirestoreService.getUser(widget.initialUser!);
+          selectedUser = fetched;
+          _userInitialized = true;
+          updated = true;
+        }
       }
     } else if (selectedUser != _noneUser) {
       selectedUser = _noneUser;
@@ -46,7 +54,7 @@ class _UserSelector extends ConsumerState<UserSelector> {
       updated = true;
     }
 
-    if (updated && _userInitialized) {
+    if (updated && _userInitialized && mounted) {
       setState(() {});
     }
   }
@@ -54,9 +62,8 @@ class _UserSelector extends ConsumerState<UserSelector> {
   @override
   Widget build(BuildContext context) {
     List<User> availableUsers = [_noneUser];
-
     availableUsers
-        .addAll(ref.watch(tripUsersProvider).entries.map((x) => x.value));
+        .addAll(ref.watch(tripAllUsersProvider).entries.map((x) => x.value));
 
     initUserData();
 

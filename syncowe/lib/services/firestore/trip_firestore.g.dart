@@ -7,7 +7,7 @@ part of 'trip_firestore.dart';
 // **************************************************************************
 
 String _$tripFirestoreServiceHash() =>
-    r'c13a303e7d88ae9c5c38d57814de44d02407f34e';
+    r'fa60b0e0dce69e03e528403b7a9e639d2d205a03';
 
 /// See also [TripFirestoreService].
 @ProviderFor(TripFirestoreService)
@@ -24,4 +24,4 @@ final tripFirestoreServiceProvider = AutoDisposeNotifierProvider<
 
 typedef _$TripFirestoreService = AutoDisposeNotifier<TripFirestoreService>;
 // ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

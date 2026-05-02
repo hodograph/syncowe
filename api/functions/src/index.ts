@@ -170,6 +170,10 @@ async (event) =>
 exports.transactionCreated = onDocumentCreatedWithAuthContext(`/${tripsCollectionName}` +
   `/{tripId}/${transactionsCollectionName}/{transactionId}`,
 async (event) => {
+  const tripDoc = await firestore.collection(tripsCollectionName).doc(event.params.tripId).get();
+  const isOneOff = (tripDoc.data() as any)?.isOneOff ?? false;
+  if (isOneOff) return;
+
   const newTransaction = event.data?.data() as Transaction;
 
   await updateOverallSummariesFromTransaction(newTransaction,
@@ -191,8 +195,13 @@ async (event) => {
 exports.transactionUpdated = onDocumentUpdatedWithAuthContext(`/${tripsCollectionName}` +
   `/{tripId}/${transactionsCollectionName}/{transactionId}`,
 async (event) => {
+  const tripDoc = await firestore.collection(tripsCollectionName).doc(event.params.tripId).get();
+  const isOneOff = (tripDoc.data() as any)?.isOneOff ?? false;
+
   await deleteOverallSummaries(event.params.tripId,
     event.params.transactionId);
+
+  if (isOneOff) return;
 
   const newTransaction = event.data?.after.data() as Transaction;
   await updateOverallSummariesFromTransaction(newTransaction,
