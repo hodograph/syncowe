@@ -73,6 +73,7 @@ class _CalculatorKeyboardWidgetState
     if (_focusNode.hasFocus) {
       _showKeyboard();
     } else {
+      _calculate();
       _hideKeyboard();
     }
   }
