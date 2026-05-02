@@ -56,7 +56,7 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
     Transaction? currentTransaction = ref.watch(currentTransactionProvider);
     Map<String, User> users = ref.watch(tripAllUsersProvider);
 
-    if (currentTransaction == null) {
+    if (currentTransaction == null || currentTrip == null) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -109,7 +109,7 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
         centerTitle: true,
         actions: [
           Visibility(
-            visible: !currentTrip!.isArchived,
+            visible: !currentTrip.isArchived,
             child: IconButton(
                 onPressed: deleteTransaction,
                 icon: const Icon(Icons.delete_forever)),
@@ -144,7 +144,7 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   Text(
-                    "Paid by: ${users[currentTransaction.payer]!.getDisplayString()}",
+                    "Paid by: ${users[currentTransaction.payer]?.getDisplayString() ?? currentTransaction.payer}",
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   Text(
@@ -171,13 +171,13 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
                     runSpacing: 4.0,
                     children: List.generate(debts.length, (index) {
                       String userId = userIds[index];
-                      User user = users[userId]!;
+                      User? user = users[userId];
                       return Chip(
                         avatar: CircleAvatar(
                           backgroundColor:
                               pieChartColors[index % pieChartColors.length],
                         ),
-                        label: Text(user.getDisplayString()),
+                        label: Text(user?.getDisplayString() ?? userId),
                       );
                     }),
                   ),
@@ -204,7 +204,7 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
                 }
 
                 return ExpansionTile(
-                  title: Text(users[user]!.getDisplayString()),
+                  title: Text(users[user]?.getDisplayString() ?? user),
                   subtitle: Text(
                     NumberFormat.currency(locale: "en_US", symbol: "\$")
                         .format(debts[user]!),

@@ -23,7 +23,9 @@ import 'package:syncowe/services/firestore/trip_firestore.dart';
 import 'package:syncowe/services/firestore/user_firestore.dart';
 
 class EditTransactionForm extends ConsumerStatefulWidget {
-  const EditTransactionForm({super.key});
+  final String? initialName;
+
+  const EditTransactionForm({super.key, this.initialName});
 
   @override
   ConsumerState<EditTransactionForm> createState() => _EditTransactionForm();
@@ -75,12 +77,12 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
 
   Future<void> addDebt() async {
     if (_splitType == SplitType.evenSplit) {
-      var tripUsers =
-          ref.watch(tripUsersProvider).entries.map((x) => x.key).toList();
+      final allUsers =
+          ref.read(tripAllUsersProvider).entries.map((x) => x.key).toList();
       List<String>? userDebtsToAdd = await showDialog<List<String>?>(
           context: context,
           builder: (context) {
-            List<String> selectedUsers = tripUsers;
+            List<String> selectedUsers = allUsers;
             return AlertDialog(
               title: const Text("Add Debtors"),
               content: SizedBox(
@@ -115,12 +117,12 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
 
   void splitDebt(DebtEditor debt) async {
     if (debt.debt.amount > 0) {
-      var tripUsers =
-          ref.watch(tripUsersProvider).entries.map((x) => x.key).toList();
+      final allUsers =
+          ref.read(tripAllUsersProvider).entries.map((x) => x.key).toList();
       List<String>? usersToSplitBetween = await showDialog<List<String>>(
           context: context,
           builder: (context) {
-            List<String> selectedUsers = tripUsers;
+            List<String> selectedUsers = allUsers;
             return AlertDialog(
               icon: const Icon(Icons.call_split_rounded),
               title: const Text("Split Debt"),
@@ -191,6 +193,9 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
       }
     } else {
       _payer = UserFirestoreService().currentUserId();
+      if (widget.initialName != null) {
+        _nameController.text = widget.initialName!;
+      }
     }
 
     _totalAmountController.text =

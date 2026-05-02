@@ -56,7 +56,9 @@ class _EditTripForm extends ConsumerState<EditTripForm> {
         ref.read(currentTripIdProvider.notifier).setTrip(savedTripId);
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-              builder: (context) => const EditTransactionForm()),
+              builder: (context) => EditTransactionForm(
+                    initialName: _nameController.text,
+                  )),
         );
       } else {
         Navigator.pop(context);
