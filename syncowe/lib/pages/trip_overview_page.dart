@@ -43,7 +43,7 @@ class _TripOverviewPage extends ConsumerState<TripOverviewPage> {
 
         return StreamBuilder(
           stream: tripFirestoreService.listenToOverallDebtSummary(
-              tripId!, debtPairEntry.key),
+              tripId, debtPairEntry.key),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(
@@ -165,7 +165,7 @@ class _TripOverviewPage extends ConsumerState<TripOverviewPage> {
                       ),
                     ],
                   ),
-                  trailing: debtor.id == currentUser!.id &&
+                  trailing: debtor.id == currentUser.id &&
                           totalOwed - totalPending > 0
                       ? FilledButton(
                           onPressed: () => Navigator.of(context).push(

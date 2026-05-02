@@ -82,7 +82,7 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
       Theme.of(context).colorScheme.secondary,
       Theme.of(context).colorScheme.tertiary,
       Theme.of(context).colorScheme.error,
-      Theme.of(context).colorScheme.surfaceVariant,
+      Theme.of(context).colorScheme.surfaceContainerHighest,
     ];
 
     List<PieChartSectionData> data = <PieChartSectionData>[];

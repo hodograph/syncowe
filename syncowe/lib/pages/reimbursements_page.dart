@@ -35,7 +35,7 @@ class _ReimbursementsPage extends ConsumerState<ReimbursementsPage> {
         isLive: true,
         viewType: ViewType.list,
         query: _tripFirestoreService
-            .reimbursements(tripId!)
+            .reimbursements(tripId)
             .orderBy(NameofReimbursement.fieldCreatedDate, descending: true),
         itemBuilder: (context, snapshots, index) {
           var users = ref.watch(tripUsersProvider);
@@ -46,7 +46,7 @@ class _ReimbursementsPage extends ConsumerState<ReimbursementsPage> {
           final reimbursement = snapshots[index].data() as Reimbursement;
           Widget? trailing;
 
-          if (reimbursement.recipient == currentUser?.id &&
+          if (reimbursement.recipient == currentUser.id &&
               !reimbursement.confirmed) {
             trailing = IconButton(
                 onPressed: () async {

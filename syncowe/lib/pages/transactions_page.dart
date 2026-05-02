@@ -58,7 +58,7 @@ class _TransactionPage extends ConsumerState<TransactionsPage> {
         padding: const EdgeInsets.only(bottom: 75),
         viewType: ViewType.list,
         query: _tripFirestoreService
-            .transactions(tripId!)
+            .transactions(tripId)
             .orderBy(NameofTransaction.fieldCreatedDate, descending: true),
         itemBuilder: (context, snapshot, index) {
           Transaction transaction = snapshot[index].data() as Transaction;
