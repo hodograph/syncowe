@@ -73,6 +73,10 @@ class TripFirestoreService extends _$TripFirestoreService {
     }
   }
 
+  Future<void> archiveTrip(String id) async {
+    await _trips.doc(id).update({NameofTrip.fieldIsArchived: true});
+  }
+
   CollectionReference transactions(String tripId) {
     return getTripDoc(tripId)
         .collection("Transactions")

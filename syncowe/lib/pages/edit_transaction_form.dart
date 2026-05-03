@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -246,8 +247,13 @@ class _EditTransactionForm extends ConsumerState<EditTransactionForm> {
             memo: "Remainder Split", amount: remainderSplit));
       }
     } else if (transaction.splitType == SplitType.payerPays) {
-      CalculatedDebt payerDebt = transaction.calculatedDebts
-          .firstWhere((x) => x.debtor == transaction.payer);
+      CalculatedDebt? payerDebt = transaction.calculatedDebts
+          .firstWhereOrNull((x) => x.debtor == transaction.payer);
+      if (payerDebt == null) {
+        payerDebt =
+            CalculatedDebt(debtor: transaction.payer, owedTo: transaction.payer);
+        transaction.calculatedDebts.add(payerDebt);
+      }
       payerDebt.amount += remainder;
       payerDebt.summary.add(
           CalculatedDebtSummaryEntry(memo: "Remainder", amount: remainder));

@@ -25,13 +25,16 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
     String? tripId = ref.watch(currentTripIdProvider);
     String? transactionId = ref.watch(currentTransactionIdProvider);
     Transaction? currentTransaction = ref.watch(currentTransactionProvider);
+    Trip? currentTrip = ref.watch(currentTripProvider);
+    final isOneOff = currentTrip?.isOneOff ?? false;
 
-    bool? delete = await showDialog<bool>(
+    bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete Transaction"),
-        content: Text(
-            "Are you sure you want to delete ${currentTransaction?.transactionName}?"),
+        title: Text(isOneOff ? "Archive Transaction" : "Delete Transaction"),
+        content: Text(isOneOff
+            ? "Are you sure you want to archive ${currentTransaction?.transactionName}?"
+            : "Are you sure you want to delete ${currentTransaction?.transactionName}?"),
         actions: [
           TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -43,10 +46,16 @@ class _TransactionSummaryPage extends ConsumerState<TransactionSummaryPage> {
       ),
     );
 
-    if (delete == true && tripId != null && transactionId != null && mounted) {
-      tripFirestoreService.deleteTransaction(tripId, transactionId);
-      Navigator.of(context).pop();
-      ref.read(currentTransactionIdProvider.notifier).setTransactionId(null);
+    if (confirm == true && tripId != null && mounted) {
+      if (isOneOff) {
+        await tripFirestoreService.archiveTrip(tripId);
+      } else {
+        tripFirestoreService.deleteTransaction(tripId, transactionId!);
+      }
+      if (mounted) {
+        Navigator.of(context).pop();
+        ref.read(currentTransactionIdProvider.notifier).setTransactionId(null);
+      }
     }
   }
 
