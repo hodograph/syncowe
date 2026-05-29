@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:firebase_ui_oauth_apple/firebase_ui_oauth_apple.dart';
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
@@ -34,8 +35,9 @@ class AuthGate extends ConsumerWidget {
                 // See: https://firebase.google.com/docs/auth/web/google-signin
                 // and https://pub.dev/packages/firebase_ui_oauth_google
                 GoogleProvider(
-                  clientId:
-                      "134068539303-j1b2q171ns7s6jj1v93uck83cclglvat.apps.googleusercontent.com",
+                  clientId: Platform.isIOS ?
+                    "134068539303-97p55nbommdmgclnusi4iekjfc9pn0sa.apps.googleusercontent.com" :
+                    "134068539303-j1b2q171ns7s6jj1v93uck83cclglvat.apps.googleusercontent.com",
                 ),
                 AppleProvider(),
               ],
