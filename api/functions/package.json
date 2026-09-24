@@ -15,7 +15,8 @@
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@azure-rest/ai-document-intelligence": "^1.0.0-beta.3",
+    "@azure-rest/ai-document-intelligence": "^1.1.0",
+    "@azure/core-auth": "^1.11.0",
     "firebase-admin": "^12.1.0",
     "firebase-functions": "^5.0.0"
   },
@@ -26,7 +27,7 @@
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.25.4",
     "firebase-functions-test": "^3.1.0",
-    "typescript": "^4.9.0"
+    "typescript": "^5.9.3"
   },
   "private": true
 }
