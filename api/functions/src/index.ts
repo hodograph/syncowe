@@ -65,19 +65,19 @@ exports.readReceipt = onCall({secrets: ["AZURE_DOC_INTEL_API_KEY", "AZURE_DOC_IN
         // If total failed to be extracted, attempt to create it from subtotal, tip, and tax.
         if (totalField == undefined || totalField.valueCurrency == undefined)
         {
-          const subtotal = document.fields["Subtotal"].valueCurrency;
+          const subtotal = document.fields["Subtotal"]?.valueCurrency;
           if (subtotal != undefined)
           {
             total += subtotal.amount;
           }
 
-          const tip = document.fields["Tip"].valueCurrency;
+          const tip = document.fields["Tip"]?.valueCurrency;
           if (tip != undefined)
           {
             total += tip.amount;
           }
 
-          const totalTax = document.fields["TotalTax"].valueCurrency;
+          const totalTax = document.fields["TotalTax"]?.valueCurrency;
           if (totalTax != undefined)
           {
             total += totalTax.amount;
@@ -90,13 +90,13 @@ exports.readReceipt = onCall({secrets: ["AZURE_DOC_INTEL_API_KEY", "AZURE_DOC_IN
 
         const debts: Debt[] = [];
 
-        document.fields["Items"].valueArray?.forEach((item) => {
+        document.fields["Items"]?.valueArray?.forEach((item) => {
           if (item?.valueObject != undefined) {
             const amount = item.valueObject["Quantity"]?.valueNumber ?? 1;
 
             for (let i = 0; i < amount; i++) {
-              const memo = item.valueObject["Description"].valueString;
-              const itemPrice = (item.valueObject["TotalPrice"].valueCurrency?.amount ?? 0) / amount;
+              const memo = item.valueObject["Description"]?.valueString;
+              const itemPrice = (item.valueObject["TotalPrice"]?.valueCurrency?.amount ?? 0) / amount;
 
               if (itemPrice != undefined) {
                 debts.push(new Debt(itemPrice, "", memo ?? ""));
